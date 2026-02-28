@@ -3,43 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
-    <title>Vishal Combat Pro</title>
+    <title>Ninja Combat Pro - Fixed</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000428, #004e92); }
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #1a1a1a; }
+        .header { position: absolute; top: 0; width: 100%; height: 45px; background: rgba(0,0,0,0.85); color: white; display: flex; justify-content: space-around; align-items: center; z-index: 50; border-bottom: 2px solid #ed4c67; }
+        .hp-bar { width: 120px; height: 12px; background: #333; border: 1px solid #fff; border-radius: 6px; overflow: hidden; }
+        #hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: 0.3s; }
         canvas { width: 100%; height: 100%; display: block; }
         
-        /* Controls */
-        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; pointer-events: none; }
-        .btn-group { display: flex; gap: 20px; pointer-events: auto; }
-        .btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 3px solid rgba(255, 255, 255, 0.5); color: white; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .btn:active { background: rgba(237, 76, 103, 0.5); border-color: #ed4c67; transform: scale(0.9); }
-        #pBtn { background: rgba(237, 76, 103, 0.3); border-color: #ed4c67; }
-
-        /* Start Screen */
-        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: white; text-align: center; }
-        #start-btn { margin-top: 20px; padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ed4c67; color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px rgba(237, 76, 103, 0.5); }
+        /* Controls Layout */
+        .controls-overlay { position: absolute; bottom: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 25px; box-sizing: border-box; pointer-events: none; z-index: 100; }
+        .btn-group { display: flex; gap: 12px; pointer-events: auto; }
+        button.ctrl-btn { width: 75px; height: 75px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.2); background: rgba(40,40,40,0.9); color: white; font-weight: bold; font-size: 11px; touch-action: none; -webkit-user-select: none; }
+        button.ctrl-btn:active { background: #ed4c67; transform: scale(0.85); border-color: #fff; }
+        
+        /* Screens */
+        #start-screen, #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; background: rgba(0,0,0,0.98); color: white; }
+        #start-btn { width: 130px; height: 130px; border-radius: 50%; border: none; background: #ed4c67; color: white; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 0 40px rgba(237, 76, 103, 0.7); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
-
 <div id="game-container">
     <div id="start-screen">
-        <h1 style="font-size: 48px; margin-bottom: 0;">VISHAL</h1>
-        <p style="letter-spacing: 5px; color: #ed4c67;">COMBAT PRO EDITION</p>
-        <button id="start-btn">START ACTION</button>
+        <h1 style="font-size: 45px; color: #ed4c67; text-shadow: 2px 2px #fff;">NINJA COMBAT PRO</h1>
+        <button id="start-btn">START</button>
+        <p style="margin-top: 15px; color: #777;">Fixed Border Version</p>
+    </div>
+
+    <div class="header">
+        <div>HP <div class="hp-bar"><div id="hp-fill"></div></div></div>
+        <div id="lvl">LEVEL 1</div>
+        <div id="score">SCORE: 0</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
-    <div class="controls">
+    <div id="overlay" style="display:none;">
+        <h1 id="status-msg" style="color: #f1c40f; font-size: 45px;">-</h1>
+        <button id="action-btn" style="padding: 18px 50px; border-radius: 35px; background: #ed4c67; color: white; border: none; font-weight:bold; font-size: 20px;">CONTINUE</button>
+    </div>
+
+    <div class="controls-overlay">
         <div class="btn-group">
-            <button class="btn" id="lBtn">LEFT</button>
-            <button class="btn" id="rBtn">RIGHT</button>
+            <button class="ctrl-btn" id="lBtn">LEFT</button>
+            <button class="ctrl-btn" id="rBtn">RIGHT</button>
+            <button class="ctrl-btn" id="jBtn" style="background:#0984e3">JUMP</button>
         </div>
         <div class="btn-group">
-            <button class="btn" id="jBtn">JUMP</button>
-            <button class="btn" id="pBtn">PUNCH</button>
+            <button class="ctrl-btn" id="pBtn" style="background:#c0392b">PUNCH</button>
+            <button class="ctrl-btn" id="sBtn" style="background:#f1c40f; color:#000">SWORD</button>
+            <button class="ctrl-btn" id="gBtn" style="background:#27ae60">GUN</button>
         </div>
     </div>
 </div>
@@ -47,102 +62,124 @@
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    
-    // വിശാലിന്റെ ഇമേജ് ലോഡ് ചെയ്യുന്നു
-    const heroImg = new Image();
-    heroImg.src = 'hero_vishal.png'; 
-
-    let isStarted = false, floorY;
-    let p = { 
-        x: 150, y: 0, dy: 0, dx: 0, 
-        dir: 1, 
-        width: 80, height: 110 
-    };
+    let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
+    let p = { x: 100, y: 0, dy: 0, dx: 0, atk: false, walk: 0, dir: 1 };
+    let bots = [], bullets = [], floorY;
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        floorY = canvas.height * 0.8;
-        p.y = floorY;
+        floorY = canvas.height * 0.75;
     }
 
-    // വിശാലിനെ വരയ്ക്കുന്ന ഫംഗ്ഷൻ
-    function drawHero(o) {
-        let s = (canvas.height / 600); // സ്ക്രീൻ സൈസിനനുസരിച്ച് സൈസ് അഡ്ജസ്റ്റ് ചെയ്യുന്നു
-        ctx.save();
-        ctx.translate(o.x, o.y);
+    function drawStickman(o, color) {
+        if(o.dead) return;
+        let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 550);
+        let d = o.dir || 1;
+        ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 7 * s;
+        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 14*s, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(20*s)); ctx.stroke();
         
-        // ദിശ മാറുന്നതിനനുസരിച്ച് ഇമേജ് ഫ്ലിപ്പ് ചെയ്യുന്നു
-        if (o.dir === -1) ctx.scale(-1, 1);
+        ctx.lineWidth = 6 * s;
+        ctx.beginPath();
+        if(o.atk === "punch") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (50*s*d), y-48*s); }
+        else if(o.atk === "sword") { ctx.strokeStyle = "#fff"; ctx.moveTo(x, y-48*s); ctx.lineTo(x + (65*s*d), y-35*s); }
+        else if(o.atk === "gun") { ctx.strokeStyle = "#555"; ctx.moveTo(x, y-48*s); ctx.lineTo(x + (45*s*d), y-48*s); }
+        else { ctx.moveTo(x, y-48*s); ctx.lineTo(x-18*s, y-30*s); ctx.moveTo(x, y-48*s); ctx.lineTo(x+18*s, y-30*s); }
+        ctx.stroke();
+        
+        ctx.strokeStyle = color;
+        ctx.beginPath(); ctx.moveTo(x, y-(20*s)); ctx.lineTo(x-15*s, y); 
+        ctx.moveTo(x, y-(20*s)); ctx.lineTo(x+15*s, y); ctx.stroke();
+    }
 
-        // സ്പ്രൈറ്റ് ഷീറ്റ് ലോജിക്
-        if (Math.abs(o.dx) > 0.5) {
-            // ഒാടുമ്പോൾ: താഴെയുള്ള റണ്ണിംഗ് സ്പ്രൈറ്റ് ഉപയോഗിക്കുന്നു
-            ctx.drawImage(heroImg, 80, 800, 180, 220, -35 * s, -100 * s, 80 * s, 105 * s);
-        } else {
-            // നിൽക്കുമ്പോൾ: മെയിൻ ഫ്രണ്ട് വ്യൂ ഉപയോഗിക്കുന്നു
-            ctx.drawImage(heroImg, 220, 180, 550, 650, -45 * s, -115 * s, 90 * s, 115 * s);
+    function initLevel() {
+        bots = []; bullets = [];
+        for(let i=0; i<level; i++) {
+            bots.push({ x: canvas.width + (i*250) + 100, y: floorY, dy: 0, dx: 0, hp: 100, dead: false, lastAtk: 0, dir: -1 });
         }
-        ctx.restore();
+        document.getElementById("lvl").innerText = "LEVEL " + level;
     }
 
     function gameLoop() {
-        if(!isStarted) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if(!isStarted || isPaused) return;
+        ctx.clearRect(0,0,canvas.width, canvas.height);
         
-        // ഫ്ലോർ വരയ്ക്കുന്നു
-        ctx.strokeStyle = "rgba(255,255,255,0.3)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, floorY);
-        ctx.lineTo(canvas.width, floorY);
-        ctx.stroke();
+        // Ground line
+        ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, floorY+2); ctx.lineTo(canvas.width, floorY+2); ctx.stroke();
 
-        // മൂവ്‌മെന്റ് ലോജിക്
-        p.x += p.dx;
-        p.y += p.dy;
-        p.dx *= 0.85; // ഫ്രിക്ഷൻ
+        // Player Border Logic (The fix!)
+        p.x += p.dx; p.y += p.dy; p.dx *= 0.82;
+        if(p.x < 30) p.x = 30; 
+        if(p.x > canvas.width - 30) p.x = canvas.width - 30;
 
-        // ബോർഡർ ചെക്ക്
-        if(p.x < 40) p.x = 40;
-        if(p.x > canvas.width - 40) p.x = canvas.width - 40;
+        if(p.y < floorY) p.dy += 1.2; else { p.dy = 0; p.y = floorY; }
+        drawStickman(p, "#3498db");
 
-        // ഗ്രാവിറ്റി
-        if(p.y < floorY) {
-            p.dy += 1.2;
-        } else {
-            p.dy = 0;
-            p.y = floorY;
-        }
+        // Bullets
+        bullets.forEach((b, i) => {
+            ctx.fillStyle = "#f1c40f"; ctx.fillRect(b.x, b.y, 12, 5); b.x += b.dx;
+            bots.forEach(bot => {
+                if(!bot.dead && Math.abs(b.x - bot.x) < 40) {
+                    bot.hp -= 50; bullets.splice(i, 1);
+                    if(bot.hp <= 0) { bot.dead = true; score += 50; }
+                }
+            });
+            if(b.x > canvas.width || b.x < 0) bullets.splice(i, 1);
+        });
 
-        drawHero(p);
+        // Bots
+        bots.forEach(bot => {
+            if(!bot.dead) {
+                bot.dir = bot.x > p.x ? -1 : 1;
+                if(Math.abs(bot.x - p.x) > 70) bot.x += bot.dir * (1.5 + level * 0.2);
+                else if(Date.now() - bot.lastAtk > 1800) {
+                    bot.atk = "punch"; bot.lastAtk = Date.now();
+                    setTimeout(() => {
+                        if(Math.abs(bot.x-p.x)<80) {
+                            hp -= 15; document.getElementById("hp-fill").style.width = (hp/3) + "%";
+                        }
+                        bot.atk = false;
+                    }, 400);
+                }
+                drawStickman(bot, "#e74c3c");
+            }
+        });
+
+        document.getElementById("score").innerText = "SCORE: " + score;
+
+        if(hp <= 0) { isPaused = true; document.getElementById("status-msg").innerText = "YOU DIED"; document.getElementById("overlay").style.display = "flex"; }
+        else if(bots.every(b => b.dead)) { isPaused = true; document.getElementById("status-msg").innerText = "LEVEL " + level + " CLEAR"; document.getElementById("overlay").style.display = "flex"; }
+        
         requestAnimationFrame(gameLoop);
     }
 
-    // കൺട്രോൾസ് സെറ്റപ്പ്
-    const setupControl = (id, action) => {
-        const el = document.getElementById(id);
-        const startAction = (e) => { e.preventDefault(); action(); };
-        el.addEventListener('touchstart', startAction);
-        el.addEventListener('mousedown', action);
-    };
-
     window.onload = () => {
         resize();
-        document.getElementById("start-btn").onclick = () => {
-            document.getElementById("start-screen").style.display = "none";
-            isStarted = true;
-            gameLoop();
-        };
+        const sBtn = document.getElementById("start-btn");
+        const startAction = (e) => { if(e) e.preventDefault(); document.getElementById("start-screen").style.display = "none"; isStarted = true; initLevel(); gameLoop(); };
+        sBtn.onclick = startAction; sBtn.ontouchstart = startAction;
 
-        setupControl("lBtn", () => { p.dx = -9; p.dir = -1; });
-        setupControl("rBtn", () => { p.dx = 9; p.dir = 1; });
-        setupControl("jBtn", () => { if(p.y >= floorY) p.dy = -20; });
-        setupControl("pBtn", () => { console.log("Punch!"); }); // പഞ്ച് ലോജിക് പിന്നീട് ആഡ് ചെയ്യാം
+        document.getElementById("action-btn").onclick = () => {
+            if(hp <= 0) location.reload();
+            else { level++; hp = 300; isPaused = false; document.getElementById("hp-fill").style.width = "100%"; document.getElementById("overlay").style.display = "none"; initLevel(); gameLoop(); }
+        };
     };
+
+    function setupBtn(id, action) {
+        const el = document.getElementById(id);
+        const trigger = (e) => { e.preventDefault(); action(); };
+        el.onmousedown = trigger; el.ontouchstart = trigger;
+    }
+
+    setupBtn("lBtn", () => { p.dx = -9; p.dir = -1; });
+    setupBtn("rBtn", () => { p.dx = 9; p.dir = 1; });
+    setupBtn("jBtn", () => { if(p.y >= floorY - 5) p.dy = -18; });
+    setupBtn("pBtn", () => { p.atk = "punch"; bots.forEach(b => { if(!b.dead && Math.abs(p.x - b.x) < 90) { b.hp -= 25; b.dx = b.dir * -10; } if(b.hp <= 0) b.dead = true; }); setTimeout(() => p.atk = false, 250); });
+    setupBtn("sBtn", () => { p.atk = "sword"; bots.forEach(b => { if(!b.dead && Math.abs(p.x - b.x) < 110) { b.hp -= 55; b.dx = b.dir * -15; } if(b.hp <= 0) b.dead = true; }); setTimeout(() => p.atk = false, 250); });
+    setupBtn("gBtn", () => { p.atk = "gun"; bullets.push({x: p.x + (40*p.dir), y: p.y - 48, dx: 14 * p.dir}); setTimeout(() => p.atk = false, 200); });
 
     window.onresize = resize;
 </script>
-
 </body>
 </html>
