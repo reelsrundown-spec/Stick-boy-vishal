@@ -6,15 +6,17 @@
     <title>Ninja Combat Pro - Stickman Edition</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: #1a1a1a; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #0a0a0a; }
         .header { position: absolute; top: 0; width: 100%; height: 45px; background: rgba(0,0,0,0.85); color: white; display: flex; justify-content: space-around; align-items: center; z-index: 50; border-bottom: 2px solid #ed4c67; }
         .hp-bar { width: 120px; height: 12px; background: #333; border: 1px solid #fff; border-radius: 6px; overflow: hidden; }
         #hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: 0.3s; }
         canvas { width: 100%; height: 100%; display: block; }
+        
         .controls-overlay { position: absolute; bottom: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 25px; box-sizing: border-box; pointer-events: none; z-index: 100; }
         .btn-group { display: flex; gap: 12px; pointer-events: auto; }
         button.ctrl-btn { width: 75px; height: 75px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.2); background: rgba(40,40,40,0.9); color: white; font-weight: bold; font-size: 11px; }
         button.ctrl-btn:active { background: #ed4c67; transform: scale(0.85); }
+        
         #start-screen, #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; background: rgba(0,0,0,0.98); color: white; }
         #start-btn { width: 130px; height: 130px; border-radius: 50%; border: none; background: #ed4c67; color: white; font-size: 22px; font-weight: bold; cursor: pointer; }
     </style>
@@ -22,19 +24,19 @@
 <body>
 <div id="game-container">
     <div id="start-screen">
-        <h1 style="font-size: 45px; color: #ed4c67;">NINJA STICKMAN PRO</h1>
+        <h1 style="font-size: 45px; color: #ed4c67;">NINJA STICKMAN</h1>
         <button id="start-btn">START</button>
+        <p style="margin-top: 10px; color: #777;">Clean Version</p>
     </div>
+
     <div class="header">
         <div>HP <div class="hp-bar"><div id="hp-fill"></div></div></div>
         <div id="lvl">LEVEL 1</div>
         <div id="score">SCORE: 0</div>
     </div>
+
     <canvas id="gameCanvas"></canvas>
-    <div id="overlay" style="display:none;">
-        <h1 id="status-msg" style="color: #f1c40f; font-size: 45px;">-</h1>
-        <button id="action-btn" style="padding: 18px 50px; border-radius: 35px; background: #ed4c67; color: white; border: none;">CONTINUE</button>
-    </div>
+
     <div class="controls-overlay">
         <div class="btn-group">
             <button class="ctrl-btn" id="lBtn">LEFT</button>
@@ -52,9 +54,9 @@
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
+    let isStarted = false, level = 1, score = 0, hp = 300;
     let p = { x: 100, y: 0, dy: 0, dx: 0, atk: false, dir: 1 };
-    let bots = [], bullets = [], floorY;
+    let bots = [], floorY;
 
     function resize() {
         canvas.width = window.innerWidth;
@@ -62,9 +64,9 @@
         floorY = canvas.height * 0.75;
     }
 
-    function drawStickman(o, color) {
+    function drawHero(o, color) {
         if(o.dead) return;
-        let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 550);
+        let x = o.x, y = o.y, s = (canvas.height / 550);
         let d = o.dir || 1;
         ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 7 * s;
         ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 14*s, 0, Math.PI*2); ctx.fill();
@@ -86,30 +88,32 @@
     function initLevel() {
         bots = [];
         for(let i=0; i<level; i++) {
-            bots.push({ x: canvas.width + (i*250) + 100, y: floorY, hp: 100, dead: false, lastAtk: 0, dir: -1 });
+            bots.push({ x: canvas.width + 200 + (i*200), y: floorY, hp: 100, dead: false, dir: -1 });
         }
     }
 
     function gameLoop() {
-        if(!isStarted || isPaused) return;
+        if(!isStarted) return;
         ctx.clearRect(0,0,canvas.width, canvas.height);
-        ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, floorY+2); ctx.lineTo(canvas.width, floorY+2); ctx.stroke();
+        
+        ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.stroke();
 
         p.x += p.dx; p.y += p.dy; p.dx *= 0.82;
         if(p.x < 30) p.x = 30; if(p.x > canvas.width - 30) p.x = canvas.width - 30;
         if(p.y < floorY) p.dy += 1.2; else { p.dy = 0; p.y = floorY; }
-        
-        drawStickman(p, "#3498db");
+
+        drawHero(p, "#3498db");
 
         bots.forEach(bot => {
             if(!bot.dead) {
-                bot.dir = bot.x > p.x ? -1 : 1;
-                bot.x += bot.dir * 2;
-                drawStickman(bot, "#e74c3c");
+                bot.x += (p.x < bot.x ? -2 : 2);
+                drawHero(bot, "#e74c3c");
+                if(Math.abs(bot.x - p.x) < 40) { hp -= 0.5; document.getElementById("hp-fill").style.width = (hp/3) + "%"; }
             }
         });
 
-        requestAnimationFrame(gameLoop);
+        if(hp > 0) requestAnimationFrame(gameLoop);
+        else alert("GAME OVER! SCORE: " + score);
     }
 
     window.onload = () => {
@@ -125,10 +129,10 @@
         };
         setup("lBtn", () => { p.dx = -9; p.dir = -1; });
         setup("rBtn", () => { p.dx = 9; p.dir = 1; });
-        setup("jBtn", () => { if(p.y >= floorY - 5) p.dy = -18; });
-        setup("pBtn", () => { p.atk = "punch"; setTimeout(() => p.atk = false, 250); });
-        setup("sBtn", () => { p.atk = "sword"; setTimeout(() => p.atk = false, 250); });
-        setup("gBtn", () => { p.atk = "gun"; setTimeout(() => p.atk = false, 200); });
+        setup("jBtn", () => { if(p.y >= floorY) p.dy = -18; });
+        setup("pBtn", () => { p.atk = "punch"; bots.forEach(b => { if(!b.dead && Math.abs(p.x-b.x)<80) { b.hp -= 50; if(b.hp<=0){b.dead=true; score+=100;}} }); setTimeout(()=>p.atk=false, 200); });
+        setup("sBtn", () => { p.atk = "sword"; bots.forEach(b => { if(!b.dead && Math.abs(p.x-b.x)<100) { b.hp -= 100; b.dead=true; score+=100; } }); setTimeout(()=>p.atk=false, 200); });
+        setup("gBtn", () => { p.atk = "gun"; bots.forEach(b => { if(!b.dead) { b.dead=true; score+=100; } }); setTimeout(()=>p.atk=false, 200); });
     };
     window.onresize = resize;
 </script>
