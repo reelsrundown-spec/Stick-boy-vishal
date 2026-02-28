@@ -1,5 +1,5 @@
 {
-  "name": "Ninja Combat App",
+  "name": "Ninja Combat Pro",
   "short_name": "NinjaGame",
   "start_url": "Index.html",
   "display": "standalone",
@@ -7,11 +7,11 @@
   "background_color": "#000000",
   "theme_color": "#ed4c67",
   "icons": [
-  {
-    "src": "Image_1.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any maskable"
-  }
+    {
+      "src": "1770788668374.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
-  
+}
