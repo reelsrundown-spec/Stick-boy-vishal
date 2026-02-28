@@ -5,22 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
     <title>Vishal Combat Pro</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: #0a0a0a; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(to bottom, #000428, #004e92); }
         canvas { width: 100%; height: 100%; display: block; }
-        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; }
-        .btn-group { display: flex; gap: 15px; pointer-events: auto; }
-        .btn { width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid #fff; color: white; font-weight: bold; }
-        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; }
+        
+        /* Controls */
+        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; pointer-events: none; }
+        .btn-group { display: flex; gap: 20px; pointer-events: auto; }
+        .btn { width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 3px solid rgba(255, 255, 255, 0.5); color: white; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .btn:active { background: rgba(237, 76, 103, 0.5); border-color: #ed4c67; transform: scale(0.9); }
+        #pBtn { background: rgba(237, 76, 103, 0.3); border-color: #ed4c67; }
+
+        /* Start Screen */
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: white; text-align: center; }
+        #start-btn { margin-top: 20px; padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ed4c67; color: white; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px rgba(237, 76, 103, 0.5); }
     </style>
 </head>
 <body>
+
 <div id="game-container">
     <div id="start-screen">
-        <h1 style="color:#ed4c67">VISHAL COMBAT PRO</h1>
-        <button id="start-btn" style="padding: 20px 40px; font-size: 20px; background: #ed4c67; color: white; border: none; border-radius: 10px;">START GAME</button>
+        <h1 style="font-size: 48px; margin-bottom: 0;">VISHAL</h1>
+        <p style="letter-spacing: 5px; color: #ed4c67;">COMBAT PRO EDITION</p>
+        <button id="start-btn">START ACTION</button>
     </div>
+
     <canvas id="gameCanvas"></canvas>
+
     <div class="controls">
         <div class="btn-group">
             <button class="btn" id="lBtn">LEFT</button>
@@ -28,7 +39,7 @@
         </div>
         <div class="btn-group">
             <button class="btn" id="jBtn">JUMP</button>
-            <button class="btn" id="pBtn" style="background:#ed4c67">PUNCH</button>
+            <button class="btn" id="pBtn">PUNCH</button>
         </div>
     </div>
 </div>
@@ -37,69 +48,101 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     
-    // Vishal Hero Image loading
+    // വിശാലിന്റെ ഇമേജ് ലോഡ് ചെയ്യുന്നു
     const heroImg = new Image();
-    heroImg.src = 'hero_vishal.png'; //
+    heroImg.src = 'hero_vishal.png'; 
 
     let isStarted = false, floorY;
-    let p = { x: 100, y: 0, dy: 0, dx: 0, dir: 1, state: 'idle' };
+    let p = { 
+        x: 150, y: 0, dy: 0, dx: 0, 
+        dir: 1, 
+        width: 80, height: 110 
+    };
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        floorY = canvas.height * 0.75;
+        floorY = canvas.height * 0.8;
+        p.y = floorY;
     }
 
+    // വിശാലിനെ വരയ്ക്കുന്ന ഫംഗ്ഷൻ
     function drawHero(o) {
-        let s = (canvas.height / 550);
+        let s = (canvas.height / 600); // സ്ക്രീൻ സൈസിനനുസരിച്ച് സൈസ് അഡ്ജസ്റ്റ് ചെയ്യുന്നു
         ctx.save();
         ctx.translate(o.x, o.y);
+        
+        // ദിശ മാറുന്നതിനനുസരിച്ച് ഇമേജ് ഫ്ലിപ്പ് ചെയ്യുന്നു
         if (o.dir === -1) ctx.scale(-1, 1);
 
-        // Sprite Sheet Mapping
+        // സ്പ്രൈറ്റ് ഷീറ്റ് ലോജിക്
         if (Math.abs(o.dx) > 0.5) {
-            // RUNNING Posture (Bottom Left Sprite)
-            ctx.drawImage(heroImg, 80, 800, 150, 200, -35 * s, -100 * s, 70 * s, 100 * s);
+            // ഒാടുമ്പോൾ: താഴെയുള്ള റണ്ണിംഗ് സ്പ്രൈറ്റ് ഉപയോഗിക്കുന്നു
+            ctx.drawImage(heroImg, 80, 800, 180, 220, -35 * s, -100 * s, 80 * s, 105 * s);
         } else {
-            // IDLE Front Posture (Main Character)
-            ctx.drawImage(heroImg, 250, 180, 500, 650, -40 * s, -110 * s, 80 * s, 110 * s);
+            // നിൽക്കുമ്പോൾ: മെയിൻ ഫ്രണ്ട് വ്യൂ ഉപയോഗിക്കുന്നു
+            ctx.drawImage(heroImg, 220, 180, 550, 650, -45 * s, -115 * s, 90 * s, 115 * s);
         }
         ctx.restore();
     }
 
     function gameLoop() {
         if(!isStarted) return;
-        ctx.clearRect(0,0,canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Floor line
-        ctx.strokeStyle = "#fff"; ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.stroke();
+        // ഫ്ലോർ വരയ്ക്കുന്നു
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, floorY);
+        ctx.lineTo(canvas.width, floorY);
+        ctx.stroke();
 
-        // Physics & Border Fix
-        p.x += p.dx; p.y += p.dy; p.dx *= 0.8;
-        if(p.x < 30) p.x = 30; if(p.x > canvas.width - 30) p.x = canvas.width - 30;
-        if(p.y < floorY) p.dy += 1.2; else { p.dy = 0; p.y = floorY; }
+        // മൂവ്‌മെന്റ് ലോജിക്
+        p.x += p.dx;
+        p.y += p.dy;
+        p.dx *= 0.85; // ഫ്രിക്ഷൻ
+
+        // ബോർഡർ ചെക്ക്
+        if(p.x < 40) p.x = 40;
+        if(p.x > canvas.width - 40) p.x = canvas.width - 40;
+
+        // ഗ്രാവിറ്റി
+        if(p.y < floorY) {
+            p.dy += 1.2;
+        } else {
+            p.dy = 0;
+            p.y = floorY;
+        }
 
         drawHero(p);
         requestAnimationFrame(gameLoop);
     }
 
+    // കൺട്രോൾസ് സെറ്റപ്പ്
+    const setupControl = (id, action) => {
+        const el = document.getElementById(id);
+        const startAction = (e) => { e.preventDefault(); action(); };
+        el.addEventListener('touchstart', startAction);
+        el.addEventListener('mousedown', action);
+    };
+
     window.onload = () => {
         resize();
         document.getElementById("start-btn").onclick = () => {
             document.getElementById("start-screen").style.display = "none";
-            isStarted = true; gameLoop();
+            isStarted = true;
+            gameLoop();
         };
-        // Controls Logic
-        const btnSetup = (id, fn) => { 
-            const b = document.getElementById(id);
-            b.ontouchstart = (e) => { e.preventDefault(); fn(); };
-            b.onmousedown = fn;
-        };
-        btnSetup("lBtn", () => { p.dx = -8; p.dir = -1; });
-        btnSetup("rBtn", () => { p.dx = 8; p.dir = 1; });
-        btnSetup("jBtn", () => { if(p.y >= floorY) p.dy = -18; });
+
+        setupControl("lBtn", () => { p.dx = -9; p.dir = -1; });
+        setupControl("rBtn", () => { p.dx = 9; p.dir = 1; });
+        setupControl("jBtn", () => { if(p.y >= floorY) p.dy = -20; });
+        setupControl("pBtn", () => { console.log("Punch!"); }); // പഞ്ച് ലോജിക് പിന്നീട് ആഡ് ചെയ്യാം
     };
+
     window.onresize = resize;
 </script>
+
 </body>
 </html>
