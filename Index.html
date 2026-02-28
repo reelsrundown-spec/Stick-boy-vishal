@@ -51,7 +51,7 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
-    let p = { x: 150, y: 0, dy: 0, dx: 0, atk: false, walk: 0, hasSword: true };
+    let p = { x: 150, y: 0, dy: 0, dx: 0, atk: false, walk: 0, dir: 1 }; // dir: 1 for right, -1 for left
     let bots = [], bullets = [], floorY, healthKit = null;
     let gameState = ""; 
 
@@ -66,31 +66,30 @@
     function drawStickman(o, color, isBot) {
         if(o.dead) return;
         let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 500);
+        let d = o.dir || (isBot ? -1 : 1); 
         ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 6 * s;
         ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 13*s, 0, Math.PI*2); ctx.fill();
         ctx.strokeStyle = color; ctx.lineWidth = 7 * s; ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(22*s)); ctx.stroke();
         ctx.lineWidth = 5 * s; ctx.beginPath();
-        if(o.atk === "punch") { ctx.moveTo(x, y-48*s); ctx.lineTo(isBot?x-55*s:x+55*s, y-48*s); }
-        else if(o.atk === "sword") { ctx.moveTo(x, y-48*s); ctx.lineTo(isBot?x-65*s:x+65*s, y-30*s); }
-        else if(o.atk === "gun") { ctx.moveTo(x, y-48*s); ctx.lineTo(isBot?x-50*s:x+50*s, y-48*s); }
-        else { ctx.moveTo(x, y-48*s); ctx.lineTo(x-18*s+(Math.sin(o.walk*0.2)*10), y-30*s); ctx.moveTo(x, y-48*s); ctx.lineTo(x+18*s-(Math.sin(o.walk*0.2)*10), y-30*s); }
+        if(o.atk === "punch") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (55*s*d), y-48*s); }
+        else if(o.atk === "sword") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (65*s*d), y-30*s); }
+        else if(o.atk === "gun") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (50*s*d), y-48*s); }
+        else { ctx.moveTo(x, y-48*s); ctx.lineTo(x - (18*s*d) + (Math.sin(o.walk*0.2)*10), y-30*s); ctx.moveTo(x, y-48*s); ctx.lineTo(x + (18*s*d) - (Math.sin(o.walk*0.2)*10), y-30*s); }
         ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x-16*s, y+5); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x+16*s, y+5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x - (16*s*d), y+5); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x + (16*s*d), y+5); ctx.stroke();
     }
 
     function initLevel() {
         bots = []; bullets = []; let count = (level > 4) ? 1 : level;
-        for(let i=0; i<count; i++) { bots.push({ x: canvas.width - (100 + i*80), y: floorY - 10, dy: 0, dx: 0, hp: (level === 5)?600:100, dead: false, lastAtk: 0, size: (level === 5)?1.7:1 }); }
+        for(let i=0; i<count; i++) { bots.push({ x: canvas.width - (100 + i*80), y: floorY - 10, dy: 0, dx: 0, hp: (level === 5)?600:100, dead: false, lastAtk: 0, size: (level === 5)?1.7:1, dir: -1 }); }
         if(Math.random() > 0.4) healthKit = { x: canvas.width/2, y: floorY - 10 };
         document.getElementById("lvl").innerText = "LEVEL " + level;
     }
 
     function showOverlay(state) {
-        isPaused = true;
-        gameState = state;
-        let msg = "", btn = "";
-        if (state === "WIN") { msg = "നീ ചാത്തട!"; btn = "CONTINUE"; } 
-        else { msg = "നക്കിക്കോ!"; btn = "RETRY"; }
+        isPaused = true; gameState = state;
+        let msg = (state === "WIN") ? "നീ ചാത്തട!" : "നക്കിക്കോ!";
+        let btn = (state === "WIN") ? "CONTINUE" : "RETRY";
         document.getElementById("status-msg").innerText = msg;
         document.getElementById("action-btn").innerText = btn;
         document.getElementById("overlay").style.display = "flex";
@@ -103,54 +102,10 @@
         
         bullets.forEach((b, i) => {
             ctx.fillStyle = "yellow"; ctx.fillRect(b.x, b.y, 10, 4); b.x += b.dx;
-            bots.forEach(bot => { if(!bot.dead && Math.abs(b.x - bot.x) < 20) { bot.hp -= 40; bullets.splice(i, 1); if(bot.hp <= 0) bot.dead = true; } });
+            bots.forEach(bot => { if(!bot.dead && Math.abs(b.x - bot.x) < 30) { bot.hp -= 40; bullets.splice(i, 1); if(bot.hp <= 0) bot.dead = true; } });
             if(b.x > canvas.width || b.x < 0) bullets.splice(i, 1);
         });
 
         if(healthKit) { 
-            ctx.fillStyle = "white"; ctx.fillRect(healthKit.x-10, healthKit.y-10, 20, 20); 
-            ctx.fillStyle="red"; ctx.fillRect(healthKit.x-8, healthKit.y-2, 16, 4); ctx.fillRect(healthKit.x-2, healthKit.y-8, 4, 16);
-            if(Math.abs(p.x - healthKit.x) < 30) { hp = Math.min(hp+80, 300); healthKit = null; document.getElementById("hp-fill").style.width = (hp/300*100) + "%"; } 
-        }
-
-        p.x += p.dx; p.y += p.dy; p.dx *= 0.85;
-        if(p.y < floorY - 10) p.dy += 0.8; else { p.dy = 0; p.y = floorY - 10; }
-        drawStickman(p, "#3498db", false);
-
-        bots.forEach(bot => {
-            if(!bot.dead) {
-                bot.x += bot.dx; bot.dx *= 0.85; if(Math.abs(bot.x - p.x) > 70) { bot.x += (bot.x > p.x ? -2 : 2); bot.walk++; }
-                else if(Date.now() - bot.lastAtk > 1500) { bot.atk = "punch"; bot.lastAtk = Date.now(); setTimeout(() => { if(Math.abs(bot.x-p.x)<80){ hp -= 20; p.dx = (p.x>bot.x?15:-15); document.getElementById("hp-fill").style.width = (hp/300*100) + "%"; } bot.atk = false; }, 300); }
-                drawStickman(bot, bot.size > 1 ? "#000" : "#e74c3c", true);
-            }
-        });
-
-        if(hp <= 0) showOverlay("LOSE");
-        else if(bots.length > 0 && bots.every(b => b.dead)) showOverlay("WIN");
-        else requestAnimationFrame(gameLoop);
-    }
-
-    window.onload = () => {
-        resize();
-        document.getElementById("start-btn").onclick = () => { document.getElementById("start-screen").style.display = "none"; isStarted = true; initLevel(); gameLoop(); };
-        document.getElementById("action-btn").onclick = () => { 
-            if(gameState === "LOSE") { location.reload(); } 
-            else { 
-                level++; hp = 300; isPaused = false; 
-                document.getElementById("hp-fill").style.width = "100%"; 
-                document.getElementById("overlay").style.display = "none"; 
-                initLevel(); gameLoop(); 
-            } 
-        };
-    };
-
-    const setupBtn = (id, fn) => { const btn = document.getElementById(id); btn.ontouchstart = (e) => { e.preventDefault(); fn(); }; btn.onmousedown = (e) => fn(); };
-    setupBtn("lBtn", () => p.x -= 40); setupBtn("rBtn", () => p.x += 40); setupBtn("jBtn", () => { if(p.y >= floorY - 15) p.dy = -18; });
-    setupBtn("pBtn", () => handleAtk("punch")); setupBtn("sBtn", () => handleAtk("sword"));
-    setupBtn("gBtn", () => { p.atk = "gun"; bullets.push({x: p.x+30, y: floorY-45, dx: 15}); setTimeout(() => p.atk = false, 300); });
-    
-    function handleAtk(type) { p.atk = type; bots.forEach(bot => { if(!bot.dead && Math.abs(p.x - bot.x) < 100) { bot.hp -= (type === "sword" ? 50 : 20); bot.dx = (bot.x > p.x ? 40 : -40); if(bot.hp <= 0) { bot.dead = true; score += 100; document.getElementById("score").innerText = "SCORE: " + score; } } }); setTimeout(() => p.atk = false, 300); }
-    window.onresize = resize;
-</script>
-</body>
-</html>
+            ctx.fillStyle = "white"; ctx.fillRect(healthKit.x-10, healthKit.y-10, 20, 20); ctx.fillStyle="red"; ctx.fillRect(healthKit.x-8, healthKit.y-2, 16, 4); ctx.fillRect(healthKit.x-2, healthKit.y-8, 4, 16);
+            if(Math.abs(p.x - healthKit.x) < 30) { hp = Math.min(hp+80, 30
