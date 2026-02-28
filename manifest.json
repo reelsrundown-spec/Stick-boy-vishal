@@ -1,0 +1,16 @@
+{
+  "name": "Ninja Combat App",
+  "short_name": "NinjaGame",
+  "start_url": "Index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#ed4c67",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3591/3591443.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
