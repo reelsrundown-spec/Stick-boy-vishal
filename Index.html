@@ -2,110 +2,107 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ninja Combat Pro</title>
-    <link rel="manifest" href="manifest.json">
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #game-container { position: relative; width: 100vw; height: 100vh; }
-        .header { position: absolute; top: 0; width: 100%; height: 35px; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: space-around; align-items: center; z-index: 20; }
-        .hp-bar { width: 100px; height: 10px; background: #444; border: 1px solid #fff; border-radius: 5px; overflow: hidden; }
-        #hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: 0.3s; }
-        canvas { width: 100%; height: 100%; background: #1e272e; display: block; }
-        .controls-overlay { position: absolute; bottom: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; pointer-events: none; z-index: 30; }
-        .btn-group { display: flex; gap: 12px; pointer-events: auto; }
-        button { width: 65px; height: 65px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.4); background: rgba(34,34,34,0.8); color: white; font-weight: bold; font-size: 10px; touch-action: manipulation; outline: none; }
-        button:active { background: #ed4c67; transform: scale(0.9); }
-        .atk-btn { background: rgba(179,57,57,0.8); }
-        .sword-btn { background: rgba(241,196,15,0.8); color: #000; }
-        #start-screen, #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; background: rgba(0,0,0,0.9); color: white; }
-        #start-btn { width: 110px; height: 110px; border-radius: 50%; border: none; background: #ed4c67; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #ed4c67; }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #111; display: flex; flex-direction: column; }
+        
+        /* UI Header */
+        #ui-header { display: flex; justify-content: space-between; padding: 10px; background: #ff4d6d; font-weight: bold; }
+        #hp-bar { width: 100px; height: 15px; background: #333; border: 2px solid #fff; }
+        #hp-fill { width: 100%; height: 100%; background: #2ecc71; transition: width 0.3s; }
+
+        /* Screens */
+        .screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        #game-screen { display: none; width: 100%; height: 100%; position: relative; }
+        
+        /* Character */
+        #player { position: absolute; bottom: 150px; left: 50px; width: 50px; height: 60px; background: #fff; border-radius: 5px; transition: left 0.1s; }
+        .ninja-eye { position: absolute; top: 10px; right: 5px; width: 30px; height: 8px; background: #000; }
+
+        /* Controls */
+        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; }
+        .btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid #444; color: #777; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        #start-btn { width: 120px; height: 120px; background: #ff4d6d; color: #fff; font-size: 20px; border: none; box-shadow: 0 0 20px rgba(255, 77, 109, 0.5); cursor: pointer; }
     </style>
 </head>
 <body>
+
 <div id="game-container">
-    <div id="start-screen">
-        <h1 style="font-size: 32px; margin-bottom: 20px;">NINJA COMBAT PRO</h1>
+    <div id="ui-header">
+        <div>HP <div id="hp-bar"><div id="hp-fill"></div></div></div>
+        <div>LEVEL 1</div>
+        <div>SCORE: <span id="score">0</span></div>
+    </div>
+
+    <div id="menu-screen" class="screen">
+        <h1>NINJA COMBAT PRO</h1>
         <button id="start-btn">START</button>
     </div>
-    <div class="header">
-        <div>HP <div class="hp-bar"><div id="hp-fill"></div></div></div>
-        <div id="lvl">LEVEL 1</div>
-        <div id="score">SCORE: 0</div>
+
+    <div id="game-screen">
+        <div id="player"><div class="ninja-eye"></div></div>
     </div>
-    <canvas id="gameCanvas"></canvas>
-    <div id="overlay" style="display:none;">
-        <h1 id="status-msg" style="color: #f1c40f; font-size: 40px;">-</h1>
-        <button id="action-btn" style="padding: 12px 35px; border-radius: 25px; background: #ed4c67; color: white; border: none; font-weight:bold;">CONTINUE</button>
-    </div>
-    <div class="controls-overlay">
-        <div class="btn-group"><button id="lBtn">LEFT</button><button id="rBtn">RIGHT</button><button id="jBtn" style="background:#0984e3">JUMP</button></div>
-        <div class="btn-group">
-            <button class="atk-btn" id="pBtn">PUNCH</button>
-            <button class="sword-btn" id="sBtn">SWORD</button>
-            <button id="gBtn" style="background: #27ae60;">GUN</button>
-        </div>
+
+    <div id="controls">
+        <div class="btn" id="btn-left">LEFT</div>
+        <div class="btn" id="btn-right">RIGHT</div>
+        <div class="btn" id="btn-jump" style="background: rgba(52, 152, 219, 0.3);">JUMP</div>
+        <div class="btn" id="btn-punch" style="background: rgba(231, 76, 60, 0.3);">PUNCH</div>
+        <div class="btn" id="btn-sword" style="background: rgba(241, 196, 15, 0.3);">SWORD</div>
+        <div class="btn" id="btn-gun" style="background: rgba(46, 204, 113, 0.3);">GUN</div>
     </div>
 </div>
+
 <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
-    let p = { x: 150, y: 0, dy: 0, dx: 0, atk: false, walk: 0, dir: 1 }; // dir: 1 for right, -1 for left
-    let bots = [], bullets = [], floorY, healthKit = null;
-    let gameState = ""; 
+    const startBtn = document.getElementById('start-btn');
+    const menuScreen = document.getElementById('menu-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const player = document.getElementById('player');
+    
+    let playerX = 50;
+    let isJumping = false;
 
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; floorY = canvas.height * 0.55; }
+    // Start Game Logic
+    startBtn.addEventListener('pointerdown', () => {
+        menuScreen.style.display = 'none';
+        gameScreen.style.display = 'block';
+        console.log("Game Started");
+    });
 
-    function drawCity() {
-        ctx.fillStyle = "#1e272e"; ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.fillStyle = "#2c3e50";
-        for(let i=0; i<canvas.width; i+=100) { let h = canvas.height * 0.4 + (Math.sin(i)*40); ctx.fillRect(i, floorY - h, 70, h); }
+    // Movement Logic
+    function move(dir) {
+        if (dir === 'left' && playerX > 0) playerX -= 15;
+        if (dir === 'right' && playerX < window.innerWidth - 60) playerX += 15;
+        player.style.left = playerX + 'px';
     }
 
-    function drawStickman(o, color, isBot) {
-        if(o.dead) return;
-        let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 500);
-        let d = o.dir || (isBot ? -1 : 1); 
-        ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 6 * s;
-        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 13*s, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = color; ctx.lineWidth = 7 * s; ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(22*s)); ctx.stroke();
-        ctx.lineWidth = 5 * s; ctx.beginPath();
-        if(o.atk === "punch") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (55*s*d), y-48*s); }
-        else if(o.atk === "sword") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (65*s*d), y-30*s); }
-        else if(o.atk === "gun") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (50*s*d), y-48*s); }
-        else { ctx.moveTo(x, y-48*s); ctx.lineTo(x - (18*s*d) + (Math.sin(o.walk*0.2)*10), y-30*s); ctx.moveTo(x, y-48*s); ctx.lineTo(x + (18*s*d) - (Math.sin(o.walk*0.2)*10), y-30*s); }
-        ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x - (16*s*d), y+5); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x + (16*s*d), y+5); ctx.stroke();
-    }
+    // Button Listeners (Mobile Friendly)
+    document.getElementById('btn-left').addEventListener('pointerdown', () => move('left'));
+    document.getElementById('btn-right').addEventListener('pointerdown', () => move('right'));
+    
+    document.getElementById('btn-jump').addEventListener('pointerdown', () => {
+        if (!isJumping) {
+            isJumping = true;
+            player.style.bottom = '250px';
+            setTimeout(() => {
+                player.style.bottom = '150px';
+                isJumping = false;
+            }, 300);
+        }
+    });
 
-    function initLevel() {
-        bots = []; bullets = []; let count = (level > 4) ? 1 : level;
-        for(let i=0; i<count; i++) { bots.push({ x: canvas.width - (100 + i*80), y: floorY - 10, dy: 0, dx: 0, hp: (level === 5)?600:100, dead: false, lastAtk: 0, size: (level === 5)?1.7:1, dir: -1 }); }
-        if(Math.random() > 0.4) healthKit = { x: canvas.width/2, y: floorY - 10 };
-        document.getElementById("lvl").innerText = "LEVEL " + level;
-    }
+    // Weapon Actions (Visual Feedback)
+    document.getElementById('btn-punch').addEventListener('pointerdown', () => {
+        player.style.transform = 'scaleX(1.2)';
+        setTimeout(() => player.style.transform = 'scaleX(1)', 100);
+    });
 
-    function showOverlay(state) {
-        isPaused = true; gameState = state;
-        let msg = (state === "WIN") ? "നീ ചാത്തട!" : "നക്കിക്കോ!";
-        let btn = (state === "WIN") ? "CONTINUE" : "RETRY";
-        document.getElementById("status-msg").innerText = msg;
-        document.getElementById("action-btn").innerText = btn;
-        document.getElementById("overlay").style.display = "flex";
-    }
+    document.getElementById('btn-gun').addEventListener('pointerdown', () => {
+        alert("Gun Fired! (Bullet logic coming soon)");
+    });
 
-    function gameLoop() {
-        if(!isStarted || isPaused) return;
-        drawCity();
-        ctx.fillStyle = "#333"; ctx.fillRect(0, floorY, canvas.width, 4);
-        
-        bullets.forEach((b, i) => {
-            ctx.fillStyle = "yellow"; ctx.fillRect(b.x, b.y, 10, 4); b.x += b.dx;
-            bots.forEach(bot => { if(!bot.dead && Math.abs(b.x - bot.x) < 30) { bot.hp -= 40; bullets.splice(i, 1); if(bot.hp <= 0) bot.dead = true; } });
-            if(b.x > canvas.width || b.x < 0) bullets.splice(i, 1);
-        });
-
-        if(healthKit) { 
-            ctx.fillStyle = "white"; ctx.fillRect(healthKit.x-10, healthKit.y-10, 20, 20); ctx.fillStyle="red"; ctx.fillRect(healthKit.x-8, healthKit.y-2, 16, 4); ctx.fillRect(healthKit.x-2, healthKit.y-8, 4, 16);
-            if(Math.abs(p.x - healthKit.x) < 30) { hp = Math.min(hp+80, 30
+</script>
+</body>
+</html>
