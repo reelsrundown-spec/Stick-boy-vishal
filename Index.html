@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
-    <title>Ninja Combat: Landscape</title>
+    <title>Ninja Combat: Landscape Fix</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #game-container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
@@ -11,7 +11,7 @@
         /* UI Header */
         .header { 
             position: absolute; top: 0; width: 100%; height: 40px; 
-            background: rgba(0,0,0,0.6); color: white; display: flex; 
+            background: rgba(0,0,0,0.7); color: white; display: flex; 
             justify-content: space-around; align-items: center; z-index: 10; 
         }
         .hp-bar { width: 100px; height: 10px; background: #444; border: 1px solid #fff; border-radius: 5px; overflow: hidden; }
@@ -19,54 +19,56 @@
         
         canvas { width: 100%; height: 100%; background: #1e272e; display: block; }
         
-        /* Control Overlay for Landscape */
+        /* Control Overlay */
         .controls-overlay { 
             position: absolute; bottom: 20px; width: 100%; 
             display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; 
-            pointer-events: none; /* Allows clicking through empty spaces */
+            pointer-events: none; z-index: 5;
         }
         .btn-group { display: flex; gap: 15px; pointer-events: auto; }
         button { 
-            width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); 
-            background: rgba(34,34,34,0.7); color: white; font-weight: bold; font-size: 10px; 
-            touch-action: manipulation; outline: none;
+            width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); 
+            background: rgba(34,34,34,0.8); color: white; font-weight: bold; font-size: 10px; 
+            touch-action: manipulation; outline: none; box-shadow: 0 4px rgba(0,0,0,0.5);
         }
-        button:active { background: #ed4c67; transform: scale(0.9); }
-        .atk-btn { background: rgba(179,57,57,0.7); }
-        .sword-btn { background: rgba(241,196,15,0.7); color: #000; }
+        button:active { background: #ed4c67; transform: translateY(2px); box-shadow: 0 2px rgba(0,0,0,0.5); }
+        .atk-btn { background: rgba(179,57,57,0.8); }
+        .sword-btn { background: rgba(241,196,15,0.8); color: #000; }
 
         /* Overlays */
         #start-screen, #overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; z-index: 100; background: rgba(0,0,0,0.85); 
+            justify-content: center; z-index: 100; background: rgba(0,0,0,0.9); color: white;
         }
         #start-btn { 
-            width: 100px; height: 100px; border-radius: 50%; border: none; 
-            background: #ed4c67; color: white; font-weight: bold; cursor: pointer;
+            width: 120px; height: 120px; border-radius: 50%; border: none; 
+            background: #ed4c67; color: white; font-weight: bold; font-size: 18px; cursor: pointer;
+            box-shadow: 0 0 20px #ed4c67; animation: pulse 1.5s infinite;
         }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="start-screen">
-        <h1 style="color: white; margin-bottom: 20px;">NINJA COMBAT</h1>
+        <h1 style="font-size: 36px; text-shadow: 2px 2px #ed4c67; margin-bottom: 20px;">NINJA COMBAT</h1>
         <button id="start-btn">START</button>
-        <p style="color: white; margin-top: 10px;">Please rotate your phone to Landscape</p>
+        <p style="margin-top: 15px; font-size: 14px;">Rotate phone to Landscape for best experience</p>
     </div>
 
     <div class="header">
         <div>HP <div class="hp-bar"><div id="hp-fill"></div></div></div>
-        <div id="lvl">LEVEL 1</div>
-        <div id="score">SCORE: 0</div>
+        <div id="lvl" style="color:#ed4c67; font-weight:bold;">LEVEL 1</div>
+        <div id="score" style="color:gold;">SCORE: 0</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
     <div id="overlay" style="display:none;">
-        <h1 id="status-msg" style="color: #f1c40f;">NEXT LEVEL</h1>
-        <button id="action-btn" style="padding: 10px 30px; border-radius: 20px; background: #ed4c67; color: white; border: none;">CONTINUE</button>
+        <h1 id="status-msg" style="color: #f1c40f; font-size: 32px;">NEXT LEVEL</h1>
+        <button id="action-btn" style="padding: 12px 35px; border-radius: 25px; background: #ed4c67; color: white; border: none; font-weight:bold;">CONTINUE</button>
     </div>
 
     <div class="controls-overlay">
@@ -90,18 +92,21 @@
     let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
     let p = { x: 100, y: 0, dy: 0, dx: 0, atk: false, walk: 0, hasSword: true };
     let bots = [], particles = [];
+    let floorY; // Dynamic Floor Height
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        // തറയുടെ ഉയരം ക്രമീകരിക്കുന്നു (കൺട്രോൾസിന് മുകളിലായി)
+        floorY = canvas.height * 0.7; 
     }
 
     function drawCity() {
         ctx.fillStyle = "#1e272e"; ctx.fillRect(0,0,canvas.width, canvas.height);
         ctx.fillStyle = "#2c3e50";
         for(let i=0; i<canvas.width; i+=120) {
-            let h = canvas.height * 0.4 + (Math.sin(i) * 50);
-            ctx.fillRect(i, canvas.height - h, 80, h);
+            let h = canvas.height * 0.5 + (Math.sin(i) * 60);
+            ctx.fillRect(i, floorY - h, 80, h); // Buildings from floor up
         }
     }
 
@@ -114,51 +119,54 @@
         let count = (level > 4) ? 1 : level;
         for(let i=0; i<count; i++) {
             bots.push({ 
-                x: canvas.width - (100 + i*100), y: canvas.height - 20, dy: 0, dx: 0, 
+                x: canvas.width - (100 + i*100), y: floorY - 10, dy: 0, dx: 0, 
                 hp: (level === 5) ? 700 : 100, atk: false, walk: 0, dead: false, 
                 lastAtk: 0, pC: 0, kC: 0, sC: 0, size: (level === 5) ? 1.8 : 1
             });
         }
-        document.getElementById("lvl").innerText = "LEVEL " + level;
+        document.getElementById("lvl").innerText = (level === 5) ? "BOSS FIGHT" : "LEVEL " + level;
     }
 
     function drawStickman(o, color, isBot) {
         if(o.dead) return;
-        let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 400); // Scale based on screen height
+        let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 450); // Scale based on screen height
         let swing = Math.sin(o.walk * 0.2) * 12;
         ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 6 * s;
         
-        // Head
+        // Head & Mask
         ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 13*s, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#1e272e"; ctx.fillRect(x - (8*s), y - (68*s), 16*s, 4*s); // Eye Slit
         // Bandana
-        ctx.strokeStyle = "#ed4c67"; ctx.beginPath(); ctx.moveTo(x-(10*s), y-(65*s)); ctx.lineTo(x-(30*s)-swing, y-(55*s)); ctx.stroke();
+        ctx.strokeStyle = "#ed4c67"; ctx.beginPath(); ctx.moveTo(x-(10*s), y-(65*s)); ctx.lineTo(x-(35*s)-swing, y-(55*s)); ctx.stroke();
         // Body
-        ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(22*s)); ctx.stroke();
+        ctx.strokeStyle = color; ctx.lineWidth = 7 * s; ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(22*s)); ctx.stroke();
         // Arms
-        ctx.beginPath();
-        if(o.atk === "punch") { ctx.moveTo(x, y-(45*s)); ctx.lineTo(isBot?x-60*s:x+60*s, y-(45*s)); }
-        else if(o.atk === "sword") { ctx.moveTo(x, y-(45*s)); ctx.lineTo(isBot?x-70*s:x+70*s, y-(30*s)); }
-        else { ctx.moveTo(x, y-(45*s)); ctx.lineTo(x-20*s+swing, y-30*s); ctx.moveTo(x, y-(45*s)); ctx.lineTo(x+20*s-swing, y-30*s); }
+        ctx.lineWidth = 5 * s; ctx.beginPath();
+        let hX, hY;
+        if(o.atk === "punch") { hX = isBot?x-60*s:x+60*s; hY = y-48*s; ctx.moveTo(x, y-48*s); ctx.lineTo(hX, hY); }
+        else if(o.atk === "sword") { hX = isBot?x-70*s:x+70*s; hY = y-32*s; ctx.moveTo(x, y-48*s); ctx.lineTo(hX, hY); }
+        else { ctx.moveTo(x, y-48*s); ctx.lineTo(x-20*s+swing, y-32*s); ctx.moveTo(x, y-48*s); ctx.lineTo(x+20*s-swing, y-32*s); }
         ctx.stroke();
         // Legs
         ctx.beginPath(); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x-18*s-swing, y+5); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x+18*s+swing, y+5); ctx.stroke();
 
         if(o.hasSword) {
             ctx.strokeStyle = "#d1d8e0"; ctx.lineWidth = 4*s; ctx.beginPath();
-            let sx = x+(isBot?-15*s:15*s), sy = y-40*s; ctx.moveTo(sx, sy);
+            let sx = x+(isBot?-15*s:15*s), sy = y-42*s; ctx.moveTo(sx, sy);
             if(o.atk === "sword") ctx.lineTo(isBot?x-85*s:x+85*s, y-20*s);
             else ctx.lineTo(x+(isBot?-40*s:40*s), y-85*s);
             ctx.stroke();
+            ctx.strokeStyle = "#4b4b4b"; ctx.lineWidth = 6*s; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(x+(isBot?-5:5), sy+5); ctx.stroke();
         }
     }
 
     function gameLoop() {
         if(!isStarted || isPaused) return;
         drawCity();
-        ctx.fillStyle = "#333"; ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
+        ctx.fillStyle = "#333"; ctx.fillRect(0, floorY, canvas.width, 6); // Floor Line
 
         p.x += p.dx; p.y += p.dy; p.dx *= 0.85;
-        if(p.y < canvas.height - 20) p.dy += 0.8; else { p.dy = 0; p.y = canvas.height - 20; }
+        if(p.y < floorY - 10) p.dy += 0.8; else { p.dy = 0; p.y = floorY - 10; }
         if(p.x < 30) p.x = 30; if(p.x > canvas.width - 30) p.x = canvas.width - 30;
 
         drawStickman(p, "#3498db", false);
@@ -168,12 +176,12 @@
             if(!bot.dead) {
                 activeBots++;
                 bot.x += bot.dx; bot.y += bot.dy; bot.dx *= 0.85;
-                if(bot.y < canvas.height - 20) bot.dy += 0.8; else { bot.dy = 0; bot.y = canvas.height - 20; }
-                if(Math.abs(bot.x - p.x) > 80 * bot.size) { bot.x += (bot.x > p.x ? -2.5 : 2.5); bot.walk++; }
+                if(bot.y < floorY - 10) bot.dy += 0.8; else { bot.dy = 0; bot.y = floorY - 10; }
+                if(Math.abs(bot.x - p.x) > 85 * bot.size) { bot.x += (bot.x > p.x ? -2.8 : 2.8); bot.walk++; }
                 else if(Date.now() - bot.lastAtk > 1200) {
                     bot.atk = "punch"; bot.lastAtk = Date.now();
                     setTimeout(() => {
-                        if(Math.abs(bot.x - p.x) < 100) { hp -= 20; p.dx = (p.x > bot.x ? 20 : -20); createBlood(p.x, p.y-40); document.getElementById("hp-fill").style.width = (hp/300*100) + "%"; }
+                        if(Math.abs(bot.x - p.x) < 100) { hp -= 25; p.dx = (p.x > bot.x ? 25 : -25); createBlood(p.x, p.y-40); document.getElementById("hp-fill").style.width = (hp/300*100) + "%"; }
                         bot.atk = false;
                     }, 300);
                 }
@@ -203,21 +211,21 @@
         if(p.atk || isPaused || !isStarted) return;
         p.atk = type;
         bots.forEach(bot => {
-            if(!bot.dead && Math.abs(p.x - bot.x) < (type === "sword" ? 130 : 100)) {
+            if(!bot.dead && Math.abs(p.x - bot.x) < (type === "sword" ? 140 : 110)) {
                 createBlood(bot.x, bot.y - 40);
-                bot.hp -= (type === "punch" ? 15 : (type === "kick" ? 30 : 60));
-                bot.dx = (bot.x > p.x ? 40 : -40);
+                bot.hp -= (type === "punch" ? 15 : (type === "kick" ? 30 : 65));
+                bot.dx = (bot.x > p.x ? 50 : -50);
                 if(bot.hp <= 0) { bot.dead = true; score += 100; document.getElementById("score").innerText = "SCORE: " + score; }
             }
         });
-        setTimeout(() => p.atk = false, 300);
+        setTimeout(() => p.atk = false, 350);
     }
 
     window.onload = () => {
         resize();
         document.getElementById("start-btn").onclick = () => {
             document.getElementById("start-screen").style.display = "none";
-            isStarted = true; initLevel(); gameLoop();
+            isStarted = true; initLevel(); p.y = floorY - 10; gameLoop();
         };
         document.getElementById("action-btn").onclick = () => {
             if(hp <= 0) location.reload();
@@ -231,9 +239,9 @@
         btn.onmousedown = (e) => fn();
     };
 
-    setupBtn("lBtn", () => { p.x -= 40; p.walk++; });
-    setupBtn("rBtn", () => { p.x += 40; p.walk++; });
-    setupBtn("jBtn", () => { if(p.y >= canvas.height - 25) p.dy = -18; });
+    setupBtn("lBtn", () => { p.x -= 45; p.walk++; });
+    setupBtn("rBtn", () => { p.x += 45; p.walk++; });
+    setupBtn("jBtn", () => { if(p.y >= floorY - 20) p.dy = -20; });
     setupBtn("pBtn", () => handleAtk("punch"));
     setupBtn("kBtn", () => handleAtk("kick"));
     setupBtn("sBtn", () => handleAtk("sword"));
