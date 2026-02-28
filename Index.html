@@ -26,7 +26,7 @@
     <div id="start-screen">
         <h1 style="font-size: 45px; color: #ed4c67;">NINJA STICKMAN</h1>
         <button id="start-btn">START</button>
-        <p style="margin-top: 10px; color: #777;">Clean Version</p>
+        <p style="margin-top: 10px; color: #777;">Fixed Clean Version</p>
     </div>
 
     <div class="header">
@@ -64,25 +64,54 @@
         floorY = canvas.height * 0.75;
     }
 
-    function drawHero(o, color) {
+    // ഫോട്ടോ ഇല്ലാതെ സ്റ്റിക്ക്മാനെ മാത്രം വരയ്ക്കുന്ന ഫംഗ്ഷൻ
+    function drawStickman(o, color) {
         if(o.dead) return;
         let x = o.x, y = o.y, s = (canvas.height / 550);
         let d = o.dir || 1;
-        ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 7 * s;
-        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 14*s, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(20*s)); ctx.stroke();
         
-        ctx.lineWidth = 6 * s;
-        ctx.beginPath();
-        if(o.atk === "punch") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (50*s*d), y-48*s); }
-        else if(o.atk === "sword") { ctx.strokeStyle = "#fff"; ctx.moveTo(x, y-48*s); ctx.lineTo(x + (65*s*d), y-35*s); }
-        else if(o.atk === "gun") { ctx.strokeStyle = "#555"; ctx.moveTo(x, y-48*s); ctx.lineTo(x + (45*s*d), y-48*s); }
-        else { ctx.moveTo(x, y-48*s); ctx.lineTo(x-18*s, y-30*s); ctx.moveTo(x, y-48*s); ctx.lineTo(x+18*s, y-30*s); }
+        ctx.lineCap = "round"; 
+        ctx.strokeStyle = color; 
+        ctx.lineWidth = 7 * s;
+        
+        // Head
+        ctx.fillStyle = color; 
+        ctx.beginPath(); 
+        ctx.arc(x, y - (65 * s), 14 * s, 0, Math.PI * 2); 
+        ctx.fill();
+        
+        // Body
+        ctx.beginPath(); 
+        ctx.moveTo(x, y - (52 * s)); 
+        ctx.lineTo(x, y - (20 * s)); 
         ctx.stroke();
         
+        // Arms
+        ctx.lineWidth = 6 * s;
+        ctx.beginPath();
+        if(o.atk === "punch") { 
+            ctx.moveTo(x, y - 48 * s); 
+            ctx.lineTo(x + (50 * s * d), y - 48 * s); 
+        } else if(o.atk === "sword") {
+            ctx.strokeStyle = "#fff";
+            ctx.moveTo(x, y - 48 * s);
+            ctx.lineTo(x + (60 * s * d), y - 40 * s);
+        } else { 
+            ctx.moveTo(x, y - 48 * s); 
+            ctx.lineTo(x - 18 * s, y - 30 * s); 
+            ctx.moveTo(x, y - 48 * s); 
+            ctx.lineTo(x + 18 * s, y - 30 * s); 
+        }
+        ctx.stroke();
+        
+        // Legs
         ctx.strokeStyle = color;
-        ctx.beginPath(); ctx.moveTo(x, y-(20*s)); ctx.lineTo(x-15*s, y); 
-        ctx.moveTo(x, y-(20*s)); ctx.lineTo(x+15*s, y); ctx.stroke();
+        ctx.beginPath(); 
+        ctx.moveTo(x, y - (20 * s)); 
+        ctx.lineTo(x - 15 * s, y); 
+        ctx.moveTo(x, y - (20 * s)); 
+        ctx.lineTo(x + 15 * s, y); 
+        ctx.stroke();
     }
 
     function initLevel() {
@@ -96,19 +125,29 @@
         if(!isStarted) return;
         ctx.clearRect(0,0,canvas.width, canvas.height);
         
-        ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.stroke();
+        // Floor line
+        ctx.strokeStyle = "rgba(255,255,255,0.2)"; 
+        ctx.beginPath(); 
+        ctx.moveTo(0, floorY); 
+        ctx.lineTo(canvas.width, floorY); 
+        ctx.stroke();
 
+        // Player movement
         p.x += p.dx; p.y += p.dy; p.dx *= 0.82;
         if(p.x < 30) p.x = 30; if(p.x > canvas.width - 30) p.x = canvas.width - 30;
         if(p.y < floorY) p.dy += 1.2; else { p.dy = 0; p.y = floorY; }
 
-        drawHero(p, "#3498db");
+        drawStickman(p, "#3498db");
 
+        // Bots
         bots.forEach(bot => {
             if(!bot.dead) {
                 bot.x += (p.x < bot.x ? -2 : 2);
-                drawHero(bot, "#e74c3c");
-                if(Math.abs(bot.x - p.x) < 40) { hp -= 0.5; document.getElementById("hp-fill").style.width = (hp/3) + "%"; }
+                drawStickman(bot, "#e74c3c");
+                if(Math.abs(bot.x - p.x) < 40) { 
+                    hp -= 0.5; 
+                    document.getElementById("hp-fill").style.width = (hp/3) + "%"; 
+                }
             }
         });
 
@@ -131,7 +170,7 @@
         setup("rBtn", () => { p.dx = 9; p.dir = 1; });
         setup("jBtn", () => { if(p.y >= floorY) p.dy = -18; });
         setup("pBtn", () => { p.atk = "punch"; bots.forEach(b => { if(!b.dead && Math.abs(p.x-b.x)<80) { b.hp -= 50; if(b.hp<=0){b.dead=true; score+=100;}} }); setTimeout(()=>p.atk=false, 200); });
-        setup("sBtn", () => { p.atk = "sword"; bots.forEach(b => { if(!b.dead && Math.abs(p.x-b.x)<100) { b.hp -= 100; b.dead=true; score+=100; } }); setTimeout(()=>p.atk=false, 200); });
+        setup("sBtn", () => { p.atk = "sword"; bots.forEach(b => { if(!b.dead && Math.abs(p.x-b.x)<100) { b.dead=true; score+=100; } }); setTimeout(()=>p.atk=false, 200); });
         setup("gBtn", () => { p.atk = "gun"; bots.forEach(b => { if(!b.dead) { b.dead=true; score+=100; } }); setTimeout(()=>p.atk=false, 200); });
     };
     window.onresize = resize;
