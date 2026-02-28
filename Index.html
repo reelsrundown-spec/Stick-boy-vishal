@@ -53,6 +53,7 @@
     let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
     let p = { x: 150, y: 0, dy: 0, dx: 0, atk: false, walk: 0, hasSword: true };
     let bots = [], bullets = [], floorY, healthKit = null;
+    let gameState = ""; 
 
     function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; floorY = canvas.height * 0.55; }
 
@@ -78,19 +79,20 @@
     }
 
     function initLevel() {
-        bots = []; let count = (level > 4) ? 1 : level;
+        bots = []; bullets = []; let count = (level > 4) ? 1 : level;
         for(let i=0; i<count; i++) { bots.push({ x: canvas.width - (100 + i*80), y: floorY - 10, dy: 0, dx: 0, hp: (level === 5)?600:100, dead: false, lastAtk: 0, size: (level === 5)?1.7:1 }); }
         if(Math.random() > 0.4) healthKit = { x: canvas.width/2, y: floorY - 10 };
+        document.getElementById("lvl").innerText = "LEVEL " + level;
     }
 
-    function showOverlay(msg, btnText) {
+    function showOverlay(state) {
         isPaused = true;
-        let finalMsg = "";
-        if (msg === "LEVEL COMPLETE" || msg === "WINNER") finalMsg = "നീ ചാത്തട!"; 
-        else if (msg === "GAME OVER") finalMsg = "നക്കിക്കോ!"; 
-        else finalMsg = msg;
-        document.getElementById("status-msg").innerText = finalMsg;
-        document.getElementById("action-btn").innerText = btnText;
+        gameState = state;
+        let msg = "", btn = "";
+        if (state === "WIN") { msg = "നീ ചാത്തട!"; btn = "CONTINUE"; } 
+        else { msg = "നക്കിക്കോ!"; btn = "RETRY"; }
+        document.getElementById("status-msg").innerText = msg;
+        document.getElementById("action-btn").innerText = btn;
         document.getElementById("overlay").style.display = "flex";
     }
 
@@ -123,15 +125,23 @@
             }
         });
 
-        if(hp <= 0) showOverlay("GAME OVER", "RETRY");
-        else if(bots.length > 0 && bots.every(b => b.dead)) showOverlay("LEVEL COMPLETE", "CONTINUE");
+        if(hp <= 0) showOverlay("LOSE");
+        else if(bots.length > 0 && bots.every(b => b.dead)) showOverlay("WIN");
         else requestAnimationFrame(gameLoop);
     }
 
     window.onload = () => {
         resize();
         document.getElementById("start-btn").onclick = () => { document.getElementById("start-screen").style.display = "none"; isStarted = true; initLevel(); gameLoop(); };
-        document.getElementById("action-btn").onclick = () => { if(hp <= 0) location.reload(); else { level++; hp = 300; isPaused = false; document.getElementById("hp-fill").style.width = "100%"; document.getElementById("overlay").style.display = "none"; initLevel(); gameLoop(); } };
+        document.getElementById("action-btn").onclick = () => { 
+            if(gameState === "LOSE") { location.reload(); } 
+            else { 
+                level++; hp = 300; isPaused = false; 
+                document.getElementById("hp-fill").style.width = "100%"; 
+                document.getElementById("overlay").style.display = "none"; 
+                initLevel(); gameLoop(); 
+            } 
+        };
     };
 
     const setupBtn = (id, fn) => { const btn = document.getElementById(id); btn.ontouchstart = (e) => { e.preventDefault(); fn(); }; btn.onmousedown = (e) => fn(); };
