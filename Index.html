@@ -5,26 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Ninja Combat Pro</title>
     <style>
-        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: #111; display: flex; flex-direction: column; }
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #1a1a1a; display: flex; flex-direction: column; }
         
         /* UI Header */
-        #ui-header { display: flex; justify-content: space-between; padding: 10px; background: #ff4d6d; font-weight: bold; }
-        #hp-bar { width: 100px; height: 15px; background: #333; border: 2px solid #fff; }
-        #hp-fill { width: 100%; height: 100%; background: #2ecc71; transition: width 0.3s; }
+        #ui-header { display: flex; justify-content: space-between; padding: 15px; background: #ff4d6d; font-weight: bold; z-index: 10; }
+        #hp-bar { width: 100px; height: 12px; background: #333; border: 1px solid #fff; margin-top: 5px; }
+        #hp-fill { width: 100%; height: 100%; background: #2ecc71; }
 
         /* Screens */
-        .screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
-        #game-screen { display: none; width: 100%; height: 100%; position: relative; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.9); z-index: 20; }
+        #game-play-area { display: none; width: 100%; height: 100%; position: relative; overflow: hidden; }
         
-        /* Character */
-        #player { position: absolute; bottom: 150px; left: 50px; width: 50px; height: 60px; background: #fff; border-radius: 5px; transition: left 0.1s; }
-        .ninja-eye { position: absolute; top: 10px; right: 5px; width: 30px; height: 8px; background: #000; }
+        /* Player Sprite */
+        #player { position: absolute; bottom: 120px; left: 50px; width: 40px; height: 50px; background: #fff; border-radius: 4px; transition: bottom 0.2s; }
+        .eye { position: absolute; top: 10px; right: 0; width: 25px; height: 6px; background: #000; }
 
         /* Controls */
-        #controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-around; padding: 0 10px; box-sizing: border-box; }
-        .btn { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid #444; color: #777; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
-        #start-btn { width: 120px; height: 120px; background: #ff4d6d; color: #fff; font-size: 20px; border: none; box-shadow: 0 0 20px rgba(255, 77, 109, 0.5); cursor: pointer; }
+        #controls { position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: space-around; padding: 10px; box-sizing: border-box; z-index: 30; }
+        .btn { width: 55px; height: 55px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 1px solid #555; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; color: #ddd; -webkit-user-select: none; }
+        .btn:active { background: rgba(255,255,255,0.4); transform: scale(0.9); }
+        
+        #start-btn { padding: 20px 40px; font-size: 24px; background: #ff4d6d; color: #fff; border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 0 20px rgba(255,77,109,0.6); }
     </style>
 </head>
 <body>
@@ -37,71 +39,79 @@
     </div>
 
     <div id="menu-screen" class="screen">
-        <h1>NINJA COMBAT PRO</h1>
-        <button id="start-btn">START</button>
+        <h1 style="letter-spacing: 5px;">NINJA COMBAT PRO</h1>
+        <button id="start-btn">START GAME</button>
     </div>
 
-    <div id="game-screen">
-        <div id="player"><div class="ninja-eye"></div></div>
+    <div id="game-play-area">
+        <div id="player"><div class="eye"></div></div>
     </div>
 
     <div id="controls">
         <div class="btn" id="btn-left">LEFT</div>
         <div class="btn" id="btn-right">RIGHT</div>
-        <div class="btn" id="btn-jump" style="background: rgba(52, 152, 219, 0.3);">JUMP</div>
-        <div class="btn" id="btn-punch" style="background: rgba(231, 76, 60, 0.3);">PUNCH</div>
-        <div class="btn" id="btn-sword" style="background: rgba(241, 196, 15, 0.3);">SWORD</div>
-        <div class="btn" id="btn-gun" style="background: rgba(46, 204, 113, 0.3);">GUN</div>
+        <div class="btn" id="btn-jump" style="border-color: #3498db;">JUMP</div>
+        <div class="btn" id="btn-punch" style="border-color: #e74c3c;">PUNCH</div>
+        <div class="btn" id="btn-sword" style="border-color: #f1c40f;">SWORD</div>
+        <div class="btn" id="btn-gun" style="border-color: #2ecc71;">GUN</div>
     </div>
 </div>
 
 <script>
     const startBtn = document.getElementById('start-btn');
     const menuScreen = document.getElementById('menu-screen');
-    const gameScreen = document.getElementById('game-screen');
+    const gameArea = document.getElementById('game-play-area');
     const player = document.getElementById('player');
     
     let playerX = 50;
     let isJumping = false;
 
-    // Start Game Logic
-    startBtn.addEventListener('pointerdown', () => {
+    // Start Button Logic (Supports both Touch and Click)
+    const startGame = (e) => {
+        e.preventDefault();
         menuScreen.style.display = 'none';
-        gameScreen.style.display = 'block';
-        console.log("Game Started");
-    });
+        gameArea.style.display = 'block';
+        console.log("Ninja Game Started!");
+    };
 
-    // Movement Logic
-    function move(dir) {
-        if (dir === 'left' && playerX > 0) playerX -= 15;
-        if (dir === 'right' && playerX < window.innerWidth - 60) playerX += 15;
+    startBtn.addEventListener('click', startGame);
+    startBtn.addEventListener('touchstart', startGame);
+
+    // Movement Function
+    function movePlayer(direction) {
+        if (direction === 'left' && playerX > 10) playerX -= 20;
+        if (direction === 'right' && playerX < window.innerWidth - 50) playerX += 20;
         player.style.left = playerX + 'px';
     }
 
-    // Button Listeners (Mobile Friendly)
-    document.getElementById('btn-left').addEventListener('pointerdown', () => move('left'));
-    document.getElementById('btn-right').addEventListener('pointerdown', () => move('right'));
+    // Button Listeners
+    const addControl = (id, action) => {
+        const el = document.getElementById(id);
+        el.addEventListener('touchstart', (e) => { e.preventDefault(); action(); });
+        el.addEventListener('mousedown', action);
+    };
+
+    addControl('btn-left', () => movePlayer('left'));
+    addControl('btn-right', () => movePlayer('right'));
     
-    document.getElementById('btn-jump').addEventListener('pointerdown', () => {
+    addControl('btn-jump', () => {
         if (!isJumping) {
             isJumping = true;
-            player.style.bottom = '250px';
+            player.style.bottom = '220px';
             setTimeout(() => {
-                player.style.bottom = '150px';
+                player.style.bottom = '120px';
                 isJumping = false;
             }, 300);
         }
     });
 
-    // Weapon Actions (Visual Feedback)
-    document.getElementById('btn-punch').addEventListener('pointerdown', () => {
-        player.style.transform = 'scaleX(1.2)';
+    addControl('btn-punch', () => {
+        player.style.transform = 'scaleX(1.3)';
         setTimeout(() => player.style.transform = 'scaleX(1)', 100);
     });
 
-    document.getElementById('btn-gun').addEventListener('pointerdown', () => {
-        alert("Gun Fired! (Bullet logic coming soon)");
-    });
+    addControl('btn-gun', () => alert("Weapon: Gun Selected!"));
+    addControl('btn-sword', () => alert("Weapon: Sword Selected!"));
 
 </script>
 </body>
