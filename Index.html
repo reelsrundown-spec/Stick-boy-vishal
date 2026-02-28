@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Stickman Combat Pro</title>
+    <title>City Fighter Pro</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #game-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
         .header { height: 60px; background: #1a1a1a; color: white; display: flex; justify-content: space-around; align-items: center; border-bottom: 2px solid #ed4c67; }
         .hp-bar { width: 100px; height: 12px; background: #444; border: 1px solid #fff; }
         #hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: 0.2s; }
-        
-        /* സിറ്റി ലുക്കിനായി ക്യാൻവാസ് കളർ മാറ്റി */
         canvas { flex-grow: 1; background: #1e272e; width: 100%; display: block; }
         
+        /* Start Screen */
         #start-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=60');
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=60');
             background-size: cover; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; z-index: 100; 
         }
         #start-btn { 
-            padding: 15px 45px; font-size: 22px; background: #ed4c67; 
-            color: white; border: none; border-radius: 50px; font-weight: bold; 
-            cursor: pointer; box-shadow: 0 0 20px #ed4c67;
+            width: 150px; height: 150px; border-radius: 50%; border: none;
+            background: #ed4c67; color: white; font-weight: bold; font-size: 20px;
+            cursor: pointer; box-shadow: 0 0 30px #ed4c67; line-height: 1.2;
+            text-align: center; display: flex; align-items: center; justify-content: center;
         }
 
         #overlay { 
@@ -43,8 +43,8 @@
 
 <div id="game-wrapper">
     <div id="start-screen">
-        <h1 style="color: white; font-size: 36px; text-shadow: 2px 2px #ed4c67;">CITY FIGHTER</h1>
-        <button id="start-btn">START BATTLE</button>
+        <h1 style="color: white; font-size: 42px; text-shadow: 2px 2px #ed4c67; margin-bottom: 30px;">CITY FIGHTER</h1>
+        <button id="start-btn">START<br>BATTLE</button>
     </div>
 
     <div class="header">
@@ -84,16 +84,15 @@
     function resize() {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
+        if(p) p.y = canvas.height - 10;
     }
 
-    // സിറ്റി ബാക്ക്ഗ്രൗണ്ട് വരയ്ക്കാൻ
     function drawCity() {
         ctx.fillStyle = "#1e272e"; ctx.fillRect(0,0,canvas.width, canvas.height);
         ctx.fillStyle = "#2c3e50";
         for(let i=0; i<canvas.width; i+=80) {
             let h = 100 + (Math.sin(i) * 50);
             ctx.fillRect(i, canvas.height - h, 60, h);
-            ctx.fillStyle = "#34495e"; ctx.fillRect(i+10, canvas.height - h + 20, 10, 10);
         }
     }
 
@@ -143,14 +142,81 @@
 
         drawStickman(p, "#3498db", false);
 
+        let activeBots = 0;
         bots.forEach(bot => {
             if(!bot.dead) {
+                activeBots++;
                 bot.x += bot.dx; bot.y += bot.dy; bot.dx *= 0.85;
                 if(bot.y < canvas.height - 10) bot.dy += 0.8; else { bot.dy = 0; bot.y = canvas.height - 10; }
                 let dist = Math.abs(bot.x - p.x);
                 if(dist > 65 * bot.size) { bot.x += (bot.x > p.x ? -1.8 : 1.8); bot.walk++; }
                 else if(Date.now() - bot.lastAtk > 1400) {
-                    bot.atk = "punch";
+                    bot.atk = "punch"; bot.lastAtk = Date.now();
+                    setTimeout(() => {
+                        if(Math.abs(bot.x - p.x) < 85) { hp -= 15; p.dx = (p.x > bot.x ? 15 : -15); createBlood(p.x, p.y-40); document.getElementById("hp-fill").style.width = (hp/300*100) + "%"; }
+                        bot.atk = false;
+                    }, 300);
+                }
+                drawStickman(bot, bot.size > 1 ? "#000" : "#e74c3c", true);
+            }
+        });
 
+        particles.forEach((pt, i) => {
+            ctx.fillStyle = "red"; pt.x += pt.dx; pt.y += pt.dy; pt.life--;
+            ctx.fillRect(pt.x, pt.y, 3, 3);
+            if(pt.life <= 0) particles.splice(i, 1);
+        });
 
-    
+        if(hp <= 0) showOverlay("കളി കഴിഞ്ഞു", "വീണ്ടും ശ്രമിക്കുക");
+        else if(activeBots === 0) showOverlay("അടുത്ത ലെവൽ", "തുടങ്ങുക");
+        else requestAnimationFrame(gameLoop);
+    }
+
+    function showOverlay(msg, btnText) {
+        isPaused = true;
+        document.getElementById("status-msg").innerText = msg;
+        document.getElementById("action-btn").innerText = btnText;
+        document.getElementById("overlay").style.display = "flex";
+    }
+
+    function handleAtk(type) {
+        if(p.atk || isPaused || !isStarted) return;
+        p.atk = type;
+        bots.forEach(bot => {
+            if(!bot.dead && Math.abs(p.x - bot.x) < 90) {
+                createBlood(bot.x, bot.y - 40);
+                if(type === "punch") { bot.pC++; if(bot.pC >= 3) { bot.dx = (bot.x > p.x ? 40 : -40); bot.pC = 0; } }
+                else { bot.kC++; if(bot.kC >= 3) { bot.dx = (bot.x > p.x ? 60 : -60); bot.kC = 0; } }
+                bot.hp -= (type === "punch" ? 15 : 30);
+                if(bot.hp <= 0) { bot.dead = true; score += 100; document.getElementById("score").innerText = score; }
+            }
+        });
+        setTimeout(() => p.atk = false, 200);
+    }
+
+    // പക്കാ ഫിക്സ്ഡ് സ്റ്റാർട്ട് ലോജിക്
+    window.onload = () => {
+        resize();
+        document.getElementById("start-btn").addEventListener("click", function() {
+            document.getElementById("start-screen").style.display = "none";
+            isStarted = true;
+            initLevel();
+            gameLoop();
+        });
+    };
+
+    document.getElementById("action-btn").onclick = () => {
+        if(hp <= 0) location.reload();
+        else { level++; hp = 300; isPaused = false; document.getElementById("hp-fill").style.width = "100%"; document.getElementById("overlay").style.display = "none"; initLevel(); gameLoop(); }
+    };
+
+    document.getElementById("lBtn").ontouchstart = (e) => { e.preventDefault(); p.x -= 25; p.walk++; };
+    document.getElementById("rBtn").ontouchstart = (e) => { e.preventDefault(); p.x += 25; p.walk++; };
+    document.getElementById("jBtn").ontouchstart = (e) => { e.preventDefault(); if(p.y >= canvas.height - 15) p.dy = -17; };
+    document.getElementById("pBtn").ontouchstart = (e) => { e.preventDefault(); handleAtk("punch"); };
+    document.getElementById("kBtn").ontouchstart = (e) => { e.preventDefault(); handleAtk("kick"); };
+
+    window.addEventListener('resize', resize);
+</script>
+</body>
+</html>
