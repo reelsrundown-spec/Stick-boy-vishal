@@ -18,7 +18,7 @@
         button:active { background: #ed4c67; transform: scale(0.9); }
         .atk-btn { background: rgba(179,57,57,0.8); }
         .sword-btn { background: rgba(241,196,15,0.8); color: #000; }
-        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; background: rgba(0,0,0,0.9); color: white; }
+        #start-screen, #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; background: rgba(0,0,0,0.9); color: white; }
         #start-btn { width: 110px; height: 110px; border-radius: 50%; border: none; background: #ed4c67; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #ed4c67; }
     </style>
 </head>
@@ -34,6 +34,10 @@
         <div id="score">SCORE: 0</div>
     </div>
     <canvas id="gameCanvas"></canvas>
+    <div id="overlay" style="display:none;">
+        <h1 id="status-msg" style="color: #f1c40f; font-size: 40px;">-</h1>
+        <button id="action-btn" style="padding: 12px 35px; border-radius: 25px; background: #ed4c67; color: white; border: none; font-weight:bold;">CONTINUE</button>
+    </div>
     <div class="controls-overlay">
         <div class="btn-group"><button id="lBtn">LEFT</button><button id="rBtn">RIGHT</button><button id="jBtn" style="background:#0984e3">JUMP</button></div>
         <div class="btn-group">
@@ -46,7 +50,7 @@
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    let isStarted = false, level = 1, score = 0, hp = 300;
+    let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
     let p = { x: 150, y: 0, dy: 0, dx: 0, atk: false, walk: 0, hasSword: true };
     let bots = [], bullets = [], floorY, healthKit = null;
 
@@ -79,12 +83,22 @@
         if(Math.random() > 0.4) healthKit = { x: canvas.width/2, y: floorY - 10 };
     }
 
+    function showOverlay(msg, btnText) {
+        isPaused = true;
+        let finalMsg = "";
+        if (msg === "LEVEL COMPLETE" || msg === "WINNER") finalMsg = "നീ ചാത്തട!"; 
+        else if (msg === "GAME OVER") finalMsg = "നക്കിക്കോ!"; 
+        else finalMsg = msg;
+        document.getElementById("status-msg").innerText = finalMsg;
+        document.getElementById("action-btn").innerText = btnText;
+        document.getElementById("overlay").style.display = "flex";
+    }
+
     function gameLoop() {
-        if(!isStarted) return;
+        if(!isStarted || isPaused) return;
         drawCity();
         ctx.fillStyle = "#333"; ctx.fillRect(0, floorY, canvas.width, 4);
         
-        // Draw Bullets
         bullets.forEach((b, i) => {
             ctx.fillStyle = "yellow"; ctx.fillRect(b.x, b.y, 10, 4); b.x += b.dx;
             bots.forEach(bot => { if(!bot.dead && Math.abs(b.x - bot.x) < 20) { bot.hp -= 40; bullets.splice(i, 1); if(bot.hp <= 0) bot.dead = true; } });
@@ -108,13 +122,16 @@
                 drawStickman(bot, bot.size > 1 ? "#000" : "#e74c3c", true);
             }
         });
-        if(hp > 0) requestAnimationFrame(gameLoop); else { alert("Game Over!"); location.reload(); }
-        if(bots.length > 0 && bots.every(b => b.dead)) { level++; initLevel(); }
+
+        if(hp <= 0) showOverlay("GAME OVER", "RETRY");
+        else if(bots.length > 0 && bots.every(b => b.dead)) showOverlay("LEVEL COMPLETE", "CONTINUE");
+        else requestAnimationFrame(gameLoop);
     }
 
     window.onload = () => {
         resize();
         document.getElementById("start-btn").onclick = () => { document.getElementById("start-screen").style.display = "none"; isStarted = true; initLevel(); gameLoop(); };
+        document.getElementById("action-btn").onclick = () => { if(hp <= 0) location.reload(); else { level++; hp = 300; isPaused = false; document.getElementById("hp-fill").style.width = "100%"; document.getElementById("overlay").style.display = "none"; initLevel(); gameLoop(); } };
     };
 
     const setupBtn = (id, fn) => { const btn = document.getElementById(id); btn.ontouchstart = (e) => { e.preventDefault(); fn(); }; btn.onmousedown = (e) => fn(); };
@@ -123,6 +140,7 @@
     setupBtn("gBtn", () => { p.atk = "gun"; bullets.push({x: p.x+30, y: floorY-45, dx: 15}); setTimeout(() => p.atk = false, 300); });
     
     function handleAtk(type) { p.atk = type; bots.forEach(bot => { if(!bot.dead && Math.abs(p.x - bot.x) < 100) { bot.hp -= (type === "sword" ? 50 : 20); bot.dx = (bot.x > p.x ? 40 : -40); if(bot.hp <= 0) { bot.dead = true; score += 100; document.getElementById("score").innerText = "SCORE: " + score; } } }); setTimeout(() => p.atk = false, 300); }
+    window.onresize = resize;
 </script>
 </body>
 </html>
