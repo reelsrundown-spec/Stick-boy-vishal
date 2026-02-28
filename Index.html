@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,62 +7,64 @@
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
         #game-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
-        .header { height: 60px; background: #222; color: white; display: flex; justify-content: space-around; align-items: center; border-bottom: 2px solid #444; }
+        .header { height: 60px; background: #1a1a1a; color: white; display: flex; justify-content: space-around; align-items: center; border-bottom: 2px solid #ed4c67; }
         .hp-bar { width: 100px; height: 12px; background: #444; border: 1px solid #fff; }
         #hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: 0.2s; }
-        canvas { flex-grow: 1; background: #fff; width: 100%; display: block; }
         
-        /* Start Screen Overlay */
+        /* സിറ്റി ലുക്കിനായി ക്യാൻവാസ് കളർ മാറ്റി */
+        canvas { flex-grow: 1; background: #1e272e; width: 100%; display: block; }
+        
         #start-screen { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); display: flex; flex-direction: column; 
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=800&q=60');
+            background-size: cover; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; z-index: 100; 
         }
         #start-btn { 
-            padding: 15px 40px; font-size: 20px; background: #27ae60; 
-            color: white; border: none; border-radius: 10px; font-weight: bold; 
-            cursor: pointer; box-shadow: 0 5px #000;
+            padding: 15px 45px; font-size: 22px; background: #ed4c67; 
+            color: white; border: none; border-radius: 50px; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 0 20px #ed4c67;
         }
 
         #overlay { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); color: white; display: none; 
+            background: rgba(0,0,0,0.9); color: white; display: none; 
             flex-direction: column; align-items: center; justify-content: center; z-index: 50; 
         }
 
-        .controls { height: 200px; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding-bottom: 15px; }
-        .row { display: flex; gap: 15px; }
-        button { width: 70px; height: 70px; border-radius: 15px; border: none; background: #333; color: white; font-weight: bold; touch-action: manipulation; box-shadow: 0 5px #000; }
-        .atk { background: #d63031; }
-        .blue { background: #0984e3; }
+        .controls { height: 210px; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-bottom: 20px; }
+        .row { display: flex; gap: 18px; }
+        button { width: 72px; height: 72px; border-radius: 50%; border: 2px solid #444; background: #222; color: white; font-weight: bold; touch-action: manipulation; }
+        button:active { background: #ed4c67; transform: scale(0.9); }
+        .atk { background: #b33939; border-color: #ff5252; }
     </style>
 </head>
 <body>
 
 <div id="game-wrapper">
     <div id="start-screen">
-        <h1 style="color: white; font-size: 32px; margin-bottom: 20px;">STICKMAN COMBAT</h1>
-        <button id="start-btn">START GAME</button>
+        <h1 style="color: white; font-size: 36px; text-shadow: 2px 2px #ed4c67;">CITY FIGHTER</h1>
+        <button id="start-btn">START BATTLE</button>
     </div>
 
     <div class="header">
         <div>HP <div class="hp-bar"><div id="hp-fill"></div></div></div>
-        <div id="lvl">LEVEL 1</div>
-        <div id="score">SCORE: 0</div>
+        <div id="lvl" style="color:#ed4c67; font-weight:bold;">LEVEL 1</div>
+        <div id="score" style="color:gold;">0</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
     <div id="overlay">
         <h1 id="status-msg" style="color: #f1c40f; font-size: 36px;">അടുത്ത ലെവൽ</h1>
-        <button id="action-btn" style="padding: 12px 25px; background: #27ae60; color: white; border: none; border-radius: 8px; font-weight: bold;">തുടങ്ങുക</button>
+        <button id="action-btn" style="padding: 12px 30px; background: #ed4c67; color: white; border: none; border-radius: 8px;">തുടങ്ങുക</button>
     </div>
 
     <div class="controls">
         <div class="row">
-            <button id="lBtn">LEFT</button>
-            <button id="jBtn" class="blue">JUMP</button>
-            <button id="rBtn">RIGHT</button>
+            <button id="lBtn">←</button>
+            <button id="jBtn" style="background:#0984e3">UP</button>
+            <button id="rBtn">→</button>
         </div>
         <div class="row">
             <button class="atk" id="pBtn">PUNCH</button>
@@ -75,15 +77,30 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    let isStarted = false;
-    let isPaused = false;
-    let level = 1, score = 0, hp = 300;
+    let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
     let p = { x: 100, y: 0, dy: 0, dx: 0, atk: false, walk: 0 };
-    let bots = [];
+    let bots = [], particles = [];
 
     function resize() {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
+    }
+
+    // സിറ്റി ബാക്ക്ഗ്രൗണ്ട് വരയ്ക്കാൻ
+    function drawCity() {
+        ctx.fillStyle = "#1e272e"; ctx.fillRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = "#2c3e50";
+        for(let i=0; i<canvas.width; i+=80) {
+            let h = 100 + (Math.sin(i) * 50);
+            ctx.fillRect(i, canvas.height - h, 60, h);
+            ctx.fillStyle = "#34495e"; ctx.fillRect(i+10, canvas.height - h + 20, 10, 10);
+        }
+    }
+
+    function createBlood(x, y) {
+        for(let i=0; i<8; i++) {
+            particles.push({x:x, y:y, dx:(Math.random()-0.5)*10, dy:(Math.random()-0.5)*10, life:20});
+        }
     }
 
     function initLevel() {
@@ -91,115 +108,49 @@
         let count = (level > 4) ? 1 : level;
         for(let i=0; i<count; i++) {
             bots.push({ 
-                x: canvas.width - (80 + i*50), y: canvas.height - 10, dy: 0, dx: 0, 
-                hp: (level === 5) ? 500 : 100, atk: false, walk: 0, dead: false, 
-                lastAtk: 0, pC: 0, kC: 0, size: (level === 5) ? 1.6 : 1
+                x: canvas.width - (80 + i*60), y: canvas.height - 10, dy: 0, dx: 0, 
+                hp: (level === 5) ? 600 : 100, atk: false, walk: 0, dead: false, 
+                lastAtk: 0, pC: 0, kC: 0, size: (level === 5) ? 1.7 : 1
             });
         }
-        document.getElementById("lvl").innerText = "LEVEL " + level;
+        document.getElementById("lvl").innerText = (level === 5) ? "BOSS FIGHT" : "LEVEL " + level;
     }
 
     function drawStickman(o, color, isBot) {
         if(o.dead) return;
         ctx.strokeStyle = color; ctx.lineWidth = 5 * (o.size || 1); ctx.lineCap = "round";
-        let x = o.x, y = o.y, s = o.size || 1, swing = Math.sin(o.walk * 0.2) * 10;
+        let x = o.x, y = o.y, s = o.size || 1, swing = Math.sin(o.walk * 0.2) * 12;
         ctx.beginPath();
-        ctx.arc(x, y - (60*s), 12*s, 0, Math.PI * 2); 
-        ctx.moveTo(x, y - (48*s)); ctx.lineTo(x, y - (15*s)); 
-        ctx.moveTo(x, y - (40*s));
-        if(o.atk === "punch") { ctx.lineTo(isBot ? x - (45*s) : x + (45*s), y - (40*s)); }
-        else { ctx.lineTo(x - (15*s) + swing, y - (25*s)); ctx.moveTo(x, y - (40*s)); ctx.lineTo(x + (15*s) - swing, y - (25*s)); }
-        ctx.moveTo(x, y - (15*s));
-        if(o.atk === "kick") { ctx.lineTo(isBot ? x - (40*s) : x + (40*s), y - (10*s)); }
-        else { ctx.lineTo(x - (12*s) - swing, y + (10*s)); ctx.moveTo(x, y - (15*s)); ctx.lineTo(x + (12*s) + swing, y + (10*s)); }
+        ctx.arc(x, y - (65*s), 12*s, 0, Math.PI * 2); 
+        ctx.moveTo(x, y - (53*s)); ctx.lineTo(x, y - (20*s)); 
+        ctx.moveTo(x, y - (45*s));
+        if(o.atk === "punch") ctx.lineTo(isBot ? x - (50*s) : x + (50*s), y - (45*s));
+        else { ctx.lineTo(x - (18*s) + swing, y - (30*s)); ctx.moveTo(x, y - (45*s)); ctx.lineTo(x + (18*s) - swing, y - (30*s)); }
+        ctx.moveTo(x, y - (20*s));
+        if(o.atk === "kick") ctx.lineTo(isBot ? x - (45*s) : x + (45*s), y - (12*s));
+        else { ctx.lineTo(x - (14*s) - swing, y + 5); ctx.moveTo(x, y - (20*s)); ctx.lineTo(x + (14*s) + swing, y + 5); }
         ctx.stroke();
     }
 
     function gameLoop() {
         if(!isStarted || isPaused) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#555"; ctx.fillRect(0, canvas.height - 2, canvas.width, 2);
+        drawCity();
+        ctx.fillStyle = "#333"; ctx.fillRect(0, canvas.height - 4, canvas.width, 4);
 
         p.x += p.dx; p.y += p.dy; p.dx *= 0.85;
         if(p.y < canvas.height - 10) p.dy += 0.8; else { p.dy = 0; p.y = canvas.height - 10; }
-        if(p.x < 30) p.x = 30; if(p.x > canvas.width - 30) p.x = canvas.width - 30;
+        if(p.x < 20) p.x = 20; if(p.x > canvas.width - 20) p.x = canvas.width - 20;
 
-        drawStickman(p, "#0984e3", false);
+        drawStickman(p, "#3498db", false);
 
-        let activeBots = 0;
         bots.forEach(bot => {
             if(!bot.dead) {
-                activeBots++;
                 bot.x += bot.dx; bot.y += bot.dy; bot.dx *= 0.85;
-                if(bot.y < canvas.height - (10*bot.size)) bot.dy += 0.8; else { bot.dy = 0; bot.y = canvas.height - 10; }
+                if(bot.y < canvas.height - 10) bot.dy += 0.8; else { bot.dy = 0; bot.y = canvas.height - 10; }
                 let dist = Math.abs(bot.x - p.x);
-                if(dist > 60 * bot.size) {
-                    if(bot.x > p.x) bot.x -= 1.6; else bot.x += 1.6;
-                    bot.walk++;
-                } else if(Date.now() - bot.lastAtk > 1500) {
-                    bot.atk = "punch"; bot.lastAtk = Date.now();
-                    setTimeout(() => {
-                        if(Math.abs(bot.x - p.x) < 80) {
-                            hp -= 10; p.dx = (p.x > bot.x ? 12 : -12);
-                            document.getElementById("hp-fill").style.width = (hp/300*100) + "%";
-                        }
-                        bot.atk = false;
-                    }, 300);
-                }
-                drawStickman(bot, (level === 5) ? "#000" : "#d63031", true);
-            }
-        });
+                if(dist > 65 * bot.size) { bot.x += (bot.x > p.x ? -1.8 : 1.8); bot.walk++; }
+                else if(Date.now() - bot.lastAtk > 1400) {
+                    bot.atk = "punch";
 
-        if(hp <= 0) showOverlay("കളി കഴിഞ്ഞു", "വീണ്ടും ശ്രമിക്കുക");
-        else if(activeBots === 0) showOverlay("അടുത്ത ലെവൽ", "തുടങ്ങുക");
-        else requestAnimationFrame(gameLoop);
-    }
 
-    function showOverlay(msg, btnText) {
-        isPaused = true;
-        document.getElementById("status-msg").innerText = msg;
-        document.getElementById("action-btn").innerText = btnText;
-        document.getElementById("overlay").style.display = "flex";
-    }
-
-    function handleAtk(type) {
-        if(p.atk || isPaused || !isStarted) return;
-        p.atk = type;
-        bots.forEach(bot => {
-            if(!bot.dead && Math.abs(p.x - bot.x) < 85) {
-                if(type === "punch") { bot.pC++; if(bot.pC >= 3) { bot.dx = (bot.x > p.x ? 35 : -35); bot.pC = 0; } }
-                else { bot.kC++; if(bot.kC >= 3) { bot.dx = (bot.x > p.x ? 55 : -55); bot.kC = 0; } }
-                bot.hp -= (type === "punch" ? 10 : 20);
-                if(bot.hp <= 0) { bot.dead = true; score += 50; document.getElementById("score").innerText = "SCORE: " + score; }
-            }
-        });
-        setTimeout(() => p.atk = false, 200);
-    }
-
-    // Start Logic
-    document.getElementById("start-btn").onclick = () => {
-        document.getElementById("start-screen").style.display = "none";
-        isStarted = true;
-        resize(); initLevel(); gameLoop();
-    };
-
-    document.getElementById("action-btn").onclick = () => {
-        if(hp <= 0) location.reload();
-        else {
-            level++; hp = 300; isPaused = false;
-            document.getElementById("hp-fill").style.width = "100%";
-            document.getElementById("overlay").style.display = "none";
-            initLevel(); gameLoop();
-        }
-    };
-
-    document.getElementById("lBtn").ontouchstart = (e) => { e.preventDefault(); p.x -= 20; p.walk++; };
-    document.getElementById("rBtn").ontouchstart = (e) => { e.preventDefault(); p.x += 20; p.walk++; };
-    document.getElementById("jBtn").ontouchstart = (e) => { e.preventDefault(); if(p.y >= canvas.height - 15) p.dy = -16; };
-    document.getElementById("pBtn").ontouchstart = (e) => { e.preventDefault(); handleAtk("punch"); };
-    document.getElementById("kBtn").ontouchstart = (e) => { e.preventDefault(); handleAtk("kick"); };
-
-    window.addEventListener('resize', resize);
-</script>
-</body>
-</html>
+    
