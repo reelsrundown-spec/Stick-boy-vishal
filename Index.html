@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
-    <title>Ninja Adventure Pro</title>
+    <title>Ninja Adventure - Level 1</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; font-family: sans-serif; }
-        canvas { display: block; background: linear-gradient(#87CEEB, #E0F7FA); }
-        .ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: #2c3e50; font-weight: bold; pointer-events: none; z-index: 10; }
+        canvas { display: block; background: linear-gradient(#1e3799, #4a69bd); }
+        .ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; pointer-events: none; z-index: 10; text-shadow: 2px 2px 4px #000; }
         .controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; z-index: 10; }
         .btn-group { display: flex; gap: 20px; pointer-events: auto; }
-        button { width: 80px; height: 80px; border-radius: 50%; border: none; background: rgba(255,255,255,0.8); color: #333; font-weight: bold; touch-action: manipulation; box-shadow: 0 4px #999; font-size: 14px; }
-        button:active { box-shadow: 0 0 #999; transform: translateY(4px); background: #eee; }
-        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        button { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #fff; background: rgba(0,0,0,0.5); color: white; font-weight: bold; touch-action: manipulation; }
+        button:active { background: #ed4c67; transform: scale(0.9); }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
 <body>
 
 <div class="ui">
-    <div>COINS: <span id="coin-count">0</span></div>
-    <div>HP: <span id="hp-val">100</span></div>
+    <div>COINS: <span id="coin-count">0</span> / 3</div>
+    <div id="status">FIND ALL COINS TO UNLOCK EXIT!</div>
 </div>
 
 <div id="overlay">
-    <h1 id="msg">നക്കിക്കോ!</h1>
-    <button onclick="location.reload()" style="width: auto; padding: 15px 40px; border-radius: 30px; background: #ed4c67; color: white; border: none; font-weight: bold;">RETRY</button>
+    <h1 id="msg">നീ ജയിച്ചഡോ!</h1>
+    <button onclick="location.reload()" style="width: auto; padding: 15px 40px; border-radius: 30px; background: #27ae60; color: white; border: none; font-weight: bold;">NEXT LEVEL</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
@@ -35,70 +35,73 @@
         <button id="rBtn">RIGHT</button>
     </div>
     <div class="btn-group">
-        <button id="jBtn" style="background:#3498db; color:white;">JUMP</button>
-        <button id="aBtn" style="background:#e74c3c; color:white;">ATTACK</button>
+        <button id="jBtn" style="background:#0984e3;">JUMP</button>
+        <button id="sBtn" style="background:#f1c40f; color:black;">SWITCH</button>
     </div>
 </div>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    let coins = 0;
+    let coins = 0, onVine = false;
 
-    // Loading Character Image
     const ninjaImg = new Image();
     ninjaImg.src = "1000066473.gif"; 
 
-    const p = { x: 100, y: 300, w: 75, h: 75, dx: 0, dy: 0, ground: false, dir: 1 };
+    const p = { x: 50, y: 300, w: 65, h: 65, dx: 0, dy: 0, ground: false, dir: 1 };
     
-    // Platforms layout
+    // Level 1 Platforms
     const platforms = [
-        { x: 0, y: 550, w: 500, h: 60 },    
-        { x: 550, y: 450, w: 250, h: 40 },  
-        { x: 300, y: 320, w: 250, h: 40 },  
-        { x: 750, y: 250, w: 400, h: 40 }   
+        { x: 0, y: 500, w: 250, h: 100 },    // Start
+        { x: 400, y: 400, w: 200, h: 40 },   // Middle
+        { x: 750, y: 300, w: 250, h: 300 }   // End Goal
     ];
 
     const coinItems = [
-        { x: 350, y: 280, collected: false },
-        { x: 650, y: 410, collected: false },
-        { x: 900, y: 210, collected: false }
+        { x: 120, y: 450, collected: false },
+        { x: 500, y: 350, collected: false },
+        { x: 850, y: 250, collected: false }
     ];
 
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    // Vine/Rope position
+    const vine = { x: 350, y: 0, w: 10, h: 400 };
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // Draw Vine
+        ctx.fillStyle = "#2ecc71";
+        ctx.fillRect(vine.x, vine.y, vine.w, vine.h);
+
         // Draw Platforms
-        ctx.fillStyle = "#795548";
+        ctx.fillStyle = "#3d3d3d";
         platforms.forEach(plat => {
             ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
-            ctx.fillStyle = "#4CAF50"; 
-            ctx.fillRect(plat.x, plat.y, plat.w, 12);
+            ctx.fillStyle = "#27ae60"; ctx.fillRect(plat.x, plat.y, plat.w, 10);
+            ctx.fillStyle = "#3d3d3d";
         });
 
         // Draw Coins
-        ctx.fillStyle = "#FFD700";
+        ctx.fillStyle = "#f1c40f";
         coinItems.forEach(c => {
             if(!c.collected) {
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, 12, 0, Math.PI*2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(c.x, c.y, 12, 0, Math.PI*2); ctx.fill();
             }
         });
 
+        // Draw Portal at the end
+        if(coins === 3) {
+            ctx.fillStyle = "#9b59b6";
+            ctx.fillRect(850, 200, 60, 100);
+            document.getElementById("status").innerText = "GO TO PORTAL!";
+        }
+
         // Draw Ninja
         ctx.save();
-        if(p.dir === -1) {
-            ctx.scale(-1, 1);
-            ctx.drawImage(ninjaImg, -p.x - p.w, p.y, p.w, p.h);
-        } else {
-            ctx.drawImage(ninjaImg, p.x, p.y, p.w, p.h);
-        }
+        if(p.dir === -1) { ctx.scale(-1, 1); ctx.drawImage(ninjaImg, -p.x - p.w, p.y, p.w, p.h); }
+        else { ctx.drawImage(ninjaImg, p.x, p.y, p.w, p.h); }
         ctx.restore();
 
         update();
@@ -106,53 +109,53 @@
     }
 
     function update() {
-        p.dy += 0.8; 
+        if(!onVine) {
+            p.dy += 0.8;
+            p.y += p.dy;
+        }
         p.x += p.dx;
-        p.y += p.dy;
         p.ground = false;
 
         platforms.forEach(plat => {
-            if(p.x < plat.x + plat.w && p.x + p.w > plat.x &&
-               p.y + p.h > plat.y && p.y + p.h < plat.y + 25) {
-                p.y = plat.y - p.h;
-                p.dy = 0;
-                p.ground = true;
+            if(p.x < plat.x + plat.w && p.x + p.w > plat.x && p.y + p.h > plat.y && p.y + p.h < plat.y + 25) {
+                p.y = plat.y - p.h; p.dy = 0; p.ground = true;
             }
         });
 
         coinItems.forEach(c => {
             if(!c.collected && Math.abs(p.x + p.w/2 - c.x) < 40 && Math.abs(p.y + p.h/2 - c.y) < 40) {
-                c.collected = true;
-                coins++;
+                c.collected = true; coins++;
                 document.getElementById("coin-count").innerText = coins;
             }
         });
 
-        // Game Over message
-        if(p.y > canvas.height) { 
+        // Win Condition: Reach end and have all coins
+        if(coins === 3 && p.x > 800 && p.y < 350) {
             document.getElementById("overlay").style.display = "flex";
         }
+
+        if(p.y > canvas.height) { p.x = 50; p.y = 300; p.dy = 0; } // Reset if fall
     }
 
     const setBtn = (id, start, end) => {
         const b = document.getElementById(id);
-        const handleStart = (e) => { e.preventDefault(); start(); };
-        const handleEnd = (e) => { e.preventDefault(); end(); };
-        b.ontouchstart = handleStart;
-        b.ontouchend = handleEnd;
-        b.onmousedown = handleStart;
-        b.onmouseup = handleEnd;
+        b.ontouchstart = (e) => { e.preventDefault(); start(); };
+        b.ontouchend = (e) => { e.preventDefault(); end(); };
     };
 
-    // Movement on Left Side
-    setBtn("lBtn", () => { p.dx = -8; p.dir = -1; }, () => p.dx = 0);
-    setBtn("rBtn", () => { p.dx = 8; p.dir = 1; }, () => p.dx = 0);
-    // Actions on Right Side
-    setBtn("jBtn", () => { if(p.ground) p.dy = -18; }, () => {});
-    setBtn("aBtn", () => { console.log("Attack!"); }, () => {});
+    setBtn("lBtn", () => { p.dx = -7; p.dir = -1; }, () => p.dx = 0);
+    setBtn("rBtn", () => { p.dx = 7; p.dir = 1; }, () => p.dx = 0);
+    setBtn("jBtn", () => { if(p.ground) { p.dy = -17; onVine = false; } }, () => {});
+    
+    // Vine Switch Logic
+    setBtn("sBtn", () => {
+        if(Math.abs(p.x - vine.x) < 50) {
+            onVine = !onVine;
+            if(onVine) { p.x = vine.x - 25; p.dy = 0; }
+        }
+    }, () => {});
 
     window.onload = () => { resize(); draw(); };
-    window.onresize = resize;
 </script>
 </body>
 </html>
