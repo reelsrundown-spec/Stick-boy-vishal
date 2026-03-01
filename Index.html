@@ -3,180 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
-    <title>Ninja Combat Pro</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Ninja Combat 3D Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #game-container { position: relative; width: 100vw; height: 100vh; }
-        .header { position: absolute; top: 0; width: 100%; height: 35px; background: rgba(0,0,0,0.8); color: white; display: flex; justify-content: space-around; align-items: center; z-index: 20; }
-        .hp-bar { width: 100px; height: 10px; background: #444; border: 1px solid #fff; border-radius: 5px; overflow: hidden; }
+        #game-ui { position: absolute; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .header { position: absolute; top: 0; width: 100%; height: 40px; background: rgba(0,0,0,0.6); color: white; display: flex; justify-content: space-around; align-items: center; }
+        .hp-bar { width: 120px; height: 12px; background: #444; border: 2px solid #fff; border-radius: 6px; overflow: hidden; }
         #hp-fill { height: 100%; background: #2ecc71; width: 100%; transition: 0.3s; }
-        canvas { width: 100%; height: 100%; background: #1e272e; display: block; }
-        .controls-overlay { position: absolute; bottom: 15px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; pointer-events: none; z-index: 30; }
-        .btn-group { display: flex; gap: 12px; pointer-events: auto; }
-        button { width: 65px; height: 65px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.4); background: rgba(34,34,34,0.8); color: white; font-weight: bold; font-size: 10px; touch-action: manipulation; outline: none; }
+        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 50px; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 15px; pointer-events: auto; }
+        button { width: 70px; height: 70px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(50,50,50,0.8); color: white; font-weight: bold; font-size: 12px; touch-action: manipulation; }
         button:active { background: #ed4c67; transform: scale(0.9); }
-        #start-screen, #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; background: rgba(0,0,0,0.9); color: white; }
-        #start-btn { width: 110px; height: 110px; border-radius: 50%; border: none; background: #ed4c67; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px #ed4c67; }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); color: white; z-index: 100; display: none; }
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1e272e; color: white; z-index: 101; }
     </style>
 </head>
 <body>
-<div id="game-container">
-    <div id="start-screen">
-        <h1 style="font-size: 32px; margin-bottom: 20px;">NINJA COMBAT PRO</h1>
-        <button id="start-btn">START</button>
-    </div>
+
+<div id="start-screen">
+    <h1>NINJA COMBAT 3D</h1>
+    <button id="start-btn" style="width: 120px; height: 120px; background: #ed4c67; border: none; font-size: 18px;">START</button>
+</div>
+
+<div id="game-ui">
     <div class="header">
         <div>HP <div class="hp-bar"><div id="hp-fill"></div></div></div>
         <div id="lvl">LEVEL 1</div>
         <div id="score">SCORE: 0</div>
     </div>
-    <canvas id="gameCanvas"></canvas>
-    <div id="overlay" style="display:none;">
-        <h1 id="status-msg" style="color: #f1c40f; font-size: 40px;">-</h1>
-        <button id="action-btn" style="padding: 12px 35px; border-radius: 25px; background: #ed4c67; color: white; border: none; font-weight:bold;">CONTINUE</button>
+    <div id="overlay">
+        <h1 id="status-msg">നീ ചാത്തട!</h1>
+        <button id="action-btn" style="padding: 15px 40px; border-radius: 30px; background: #ed4c67; color: white; border: none; font-weight: bold; pointer-events: auto;">CONTINUE</button>
     </div>
-    <div class="controls-overlay">
+    <div class="controls">
         <div class="btn-group">
             <button id="lBtn">LEFT</button>
             <button id="rBtn">RIGHT</button>
-            <button id="jBtn" style="background:#0984e3">JUMP</button>
+            <button id="jBtn" style="background: #0984e3;">JUMP</button>
         </div>
         <div class="btn-group">
-            <button id="pBtn" style="background:rgba(179,57,57,0.8)">PUNCH</button>
-            <button id="sBtn" style="background:rgba(241,196,15,0.8); color:#000">SWORD</button>
+            <button id="pBtn" style="background: #c0392b;">PUNCH</button>
+            <button id="sBtn" style="background: #f1c40f; color: black;">SWORD</button>
             <button id="gBtn" style="background: #27ae60;">GUN</button>
         </div>
     </div>
 </div>
+
 <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    let isStarted = false, isPaused = false, level = 1, score = 0, hp = 300;
-    let p = { x: 150, y: 0, dy: 0, dx: 0, atk: false, walk: 0, dir: 1 }; 
-    let bots = [], bullets = [], floorY, healthKit = null, gameState = "";
+    // 3D Engine Variables
+    let scene, camera, renderer, player, floor;
+    let enemies = [], bullets = [];
+    let isStarted = false, isPaused = false, hp = 300, level = 1, score = 0;
 
-    function resize() { 
-        canvas.width = window.innerWidth; 
-        canvas.height = window.innerHeight; 
-        floorY = canvas.height * 0.75; 
+    function init3D() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1e272e);
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Lighting
+        const light = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(light);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(5, 10, 7);
+        scene.add(directionalLight);
+
+        // Floor
+        const floorGeo = new THREE.BoxGeometry(100, 1, 10);
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x2c3e50 });
+        floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.position.y = -1;
+        scene.add(floor);
+
+        // Player (Ninja 3D Model)
+        const playerGeo = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+        const playerMat = new THREE.MeshPhongMaterial({ color: 0x3498db });
+        player = new THREE.Mesh(playerGeo, playerMat);
+        player.dy = 0; player.dir = 1;
+        scene.add(player);
+
+        camera.position.z = 8;
+        camera.position.y = 2;
     }
 
-    function drawCity() {
-        ctx.fillStyle = "#1e272e"; ctx.fillRect(0,0,canvas.width, canvas.height);
-        ctx.fillStyle = "#2c3e50";
-        for(let i=0; i<canvas.width; i+=100) { 
-            ctx.fillRect(i, floorY - (canvas.height * 0.4), 70, canvas.height * 0.4); 
+    function spawnEnemies() {
+        enemies.forEach(e => scene.remove(e));
+        enemies = [];
+        for(let i=0; i<level; i++) {
+            const enemyGeo = new THREE.BoxGeometry(0.8, 1.8, 0.8);
+            const enemyMat = new THREE.MeshPhongMaterial({ color: 0xe74c3c });
+            let enemy = new THREE.Mesh(enemyGeo, enemyMat);
+            enemy.position.x = 5 + (i * 3);
+            enemy.hp = 250;
+            scene.add(enemy);
+            enemies.push(enemy);
         }
     }
 
-    function drawStickman(o, color, isBot) {
-        if(o.dead) return;
-        let x = o.x, y = o.y, s = (o.size || 1) * (canvas.height / 500);
-        let d = o.dir;
-        ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.lineWidth = 6 * s;
-        ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y - (65*s), 13*s, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = color; ctx.lineWidth = 7 * s; ctx.beginPath(); ctx.moveTo(x, y-(52*s)); ctx.lineTo(x, y-(22*s)); ctx.stroke();
-        ctx.lineWidth = 5 * s; ctx.beginPath();
-        if(o.atk === "punch") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (55*s*d), y-48*s); }
-        else if(o.atk === "sword") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (65*s*d), y-30*s); }
-        else if(o.atk === "gun") { ctx.moveTo(x, y-48*s); ctx.lineTo(x + (50*s*d), y-48*s); }
-        else { 
-            ctx.moveTo(x, y-48*s); ctx.lineTo(x - (18*s*d) + (Math.sin(o.walk*0.2)*10), y-30*s); 
-            ctx.moveTo(x, y-48*s); ctx.lineTo(x + (18*s*d) - (Math.sin(o.walk*0.2)*10), y-30*s); 
-        }
-        ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x, y-(22*s)); ctx.lineTo(x - (16*s*d), y+5); 
-        ctx.moveTo(x, y-(22*s)); ctx.lineTo(x + (16*s*d), y+5); ctx.stroke();
-    }
+    function animate() {
+        if(!isStarted || isPaused) return;
+        requestAnimationFrame(animate);
 
-    function initLevel() {
-        bots = []; bullets = []; 
-        let count = level;
-        for(let i=0; i<count; i++) { 
-            bots.push({ x: canvas.width - (100 + i*150), y: floorY - 10, dy: 0, dx: 0, hp: (level === 5)?1000:250, dead: false, lastAtk: 0, size: (level === 5)?1.8:1, dir: -1 }); 
-        }
-        if(Math.random() > 0.4) healthKit = { x: canvas.width/2, y: floorY - 10 };
-        document.getElementById("lvl").innerText = "LEVEL " + level;
+        // Player Jump Physics
+        player.position.y += player.dy;
+        if(player.position.y > 0) player.dy -= 0.02;
+        else { player.position.y = 0; player.dy = 0; }
+
+        // Camera Follow
+        camera.position.x += (player.position.x - camera.position.x) * 0.1;
+
+        // Bullets Move
+        bullets.forEach((b, index) => {
+            b.position.x += b.dx;
+            enemies.forEach(enemy => {
+                if(b.position.distanceTo(enemy.position) < 1) {
+                    enemy.hp -= 50;
+                    scene.remove(b);
+                    bullets.splice(index, 1);
+                    if(enemy.hp <= 0) { scene.remove(enemy); enemy.dead = true; score+=100; document.getElementById("score").innerText = "SCORE: " + score; }
+                }
+            });
+            if(Math.abs(b.position.x) > 50) { scene.remove(b); bullets.splice(index, 1); }
+        });
+
+        // Check Win/Lose
+        if(enemies.every(e => e.dead || !e.parent)) showOverlay("WIN");
+        if(hp <= 0) showOverlay("LOSE");
+
+        renderer.render(scene, camera);
     }
 
     function showOverlay(state) {
-        isPaused = true; gameState = state;
+        isPaused = true;
+        document.getElementById("overlay").style.display = "flex";
         document.getElementById("status-msg").innerText = (state === "WIN") ? "നീ ചാത്തട!" : "നക്കിക്കോ!";
         document.getElementById("action-btn").innerText = (state === "WIN") ? "CONTINUE" : "RETRY";
-        document.getElementById("overlay").style.display = "flex";
     }
 
-    function gameLoop() {
-        if(!isStarted || isPaused) return;
-        drawCity();
-        ctx.fillStyle = "#333"; ctx.fillRect(0, floorY, canvas.width, 4);
-        
-        for(let i = bullets.length - 1; i >= 0; i--) {
-            let b = bullets[i];
-            ctx.fillStyle = "yellow"; ctx.fillRect(b.x, b.y, 12, 4); b.x += b.dx;
-            bots.forEach(bot => { 
-                if(!bot.dead && Math.abs(b.x - bot.x) < 30) { 
-                    bot.hp -= 25; bullets.splice(i, 1); if(bot.hp <= 0) bot.dead = true; 
-                } 
-            });
-            if(b.x > canvas.width || b.x < 0) bullets.splice(i, 1);
-        }
-
-        if(healthKit) { 
-            ctx.fillStyle = "white"; ctx.fillRect(healthKit.x-10, healthKit.y-10, 20, 20); ctx.fillStyle="red"; ctx.fillRect(healthKit.x-8, healthKit.y-2, 16, 4); ctx.fillRect(healthKit.x-2, healthKit.y-8, 4, 16);
-            if(Math.abs(p.x - healthKit.x) < 30) { hp = Math.min(hp+80, 300); healthKit = null; updateHP(); } 
-        }
-
-        p.x += p.dx; p.y += p.dy; p.dx *= 0.85;
-        if(p.y < floorY - 10) p.dy += 0.8; else { p.dy = 0; p.y = floorY - 10; }
-        drawStickman(p, "#3498db", false);
-
-        bots.forEach(bot => {
-            if(!bot.dead) {
-                bot.dir = bot.x > p.x ? -1 : 1;
-                bot.x += bot.dx; bot.dx *= 0.85; 
-                if(Math.abs(bot.x - p.x) > 70) { bot.x += (bot.dir * 2.2); bot.walk++; }
-                else if(Date.now() - bot.lastAtk > 1200) { 
-                    bot.atk = "punch"; bot.lastAtk = Date.now(); 
-                    setTimeout(() => { if(Math.abs(bot.x-p.x)<80){ hp -= 25; p.dx = (p.x>bot.x?15:-15); updateHP(); } bot.atk = false; }, 300); 
-                }
-                drawStickman(bot, bot.size > 1 ? "#000" : "#e74c3c", true);
-            }
-        });
-
-        if(hp <= 0) showOverlay("LOSE");
-        else if(bots.length > 0 && bots.every(b => b.dead)) showOverlay("WIN");
-        else requestAnimationFrame(gameLoop);
-    }
-
-    function updateHP() { document.getElementById("hp-fill").style.width = (hp/300*100) + "%"; }
-
-    window.onload = () => {
-        resize();
-        document.getElementById("start-btn").onclick = () => { document.getElementById("start-screen").style.display = "none"; isStarted = true; initLevel(); gameLoop(); };
-        document.getElementById("action-btn").onclick = () => { if(gameState === "LOSE") location.reload(); else { level++; hp = 300; isPaused = false; updateHP(); document.getElementById("overlay").style.display = "none"; initLevel(); gameLoop(); } };
+    // Controls
+    document.getElementById("start-btn").onclick = () => {
+        document.getElementById("start-screen").style.display = "none";
+        isStarted = true;
+        init3D();
+        spawnEnemies();
+        animate();
     };
 
-    const setupBtn = (id, fn) => { 
-        const btn = document.getElementById(id); 
-        btn.ontouchstart = (e) => { e.preventDefault(); fn(); }; 
-        btn.onmousedown = (e) => { e.preventDefault(); fn(); }; 
+    document.getElementById("lBtn").ontouchstart = () => { player.position.x -= 0.5; player.dir = -1; };
+    document.getElementById("rBtn").ontouchstart = () => { player.position.x += 0.5; player.dir = 1; };
+    document.getElementById("jBtn").ontouchstart = () => { if(player.position.y === 0) player.dy = 0.3; };
+    document.getElementById("gBtn").ontouchstart = () => {
+        const bGeo = new THREE.SphereGeometry(0.1);
+        const bMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        let b = new THREE.Mesh(bGeo, bMat);
+        b.position.set(player.position.x, player.position.y + 0.5, 0);
+        b.dx = 0.3 * player.dir;
+        scene.add(b);
+        bullets.push(b);
     };
-    
-    setupBtn("lBtn", () => { p.dx = -8; p.dir = -1; p.walk++; }); 
-    setupBtn("rBtn", () => { p.dx = 8; p.dir = 1; p.walk++; });
-    setupBtn("jBtn", () => { if(p.y >= floorY - 15) p.dy = -18; });
-    setupBtn("pBtn", () => handleAtk("punch", 15)); 
-    setupBtn("sBtn", () => handleAtk("sword", 35));
-    setupBtn("gBtn", () => { if(p.atk) return; p.atk = "gun"; bullets.push({x: p.x + (30 * p.dir), y: floorY - 45, dx: 18 * p.dir}); setTimeout(() => p.atk = false, 300); });
-    
-    function handleAtk(type, dmg) { 
-        if(p.atk) return; p.atk = type; 
-        bots.forEach(bot => { if(!bot.dead && Math.abs(p.x - bot.x) < 100) { bot.hp -= dmg; bot.dx = (bot.x > p.x ? 30 : -30); if(bot.hp <= 0) { bot.dead = true; score += 100; document.getElementById("score").innerText = "SCORE: " + score; } } }); 
-        setTimeout(() => p.atk = false, 300); 
-    }
-    window.onresize = resize;
+
+    document.getElementById("action-btn").onclick = () => {
+        if(document.getElementById("action-btn").innerText === "RETRY") location.reload();
+        else { level++; hp = 300; isPaused = false; document.getElementById("overlay").style.display = "none"; spawnEnemies(); animate(); }
+    };
 </script>
 </body>
 </html>
