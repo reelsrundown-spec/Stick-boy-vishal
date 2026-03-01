@@ -7,8 +7,9 @@
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; font-family: sans-serif; }
         canvas { display: block; background: linear-gradient(#87CEEB, #E0F7FA); }
-        .ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: #2c3e50; font-weight: bold; pointer-events: none; }
-        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; }
+        .ui { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: #2c3e50; font-weight: bold; pointer-events: none; z-index: 10; }
+        .controls { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 40px; box-sizing: border-box; z-index: 10; }
+        .btn-group { display: flex; gap: 15px; pointer-events: auto; }
         button { width: 75px; height: 75px; border-radius: 50%; border: none; background: rgba(255,255,255,0.8); color: #333; font-weight: bold; touch-action: manipulation; box-shadow: 0 4px #999; }
         button:active { box-shadow: 0 0 #999; transform: translateY(4px); }
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
@@ -22,18 +23,18 @@
 </div>
 
 <div id="overlay">
-    <h1 id="msg">നക്കിക്കോ!</h1>
-    <button onclick="location.reload()" style="width: auto; padding: 12px 40px; border-radius: 25px;">RETRY</button>
+    <h1 id="msg">ನക്കിക്കോ!</h1>
+    <button onclick="location.reload()" style="width: auto; padding: 12px 40px; border-radius: 25px; background: #ed4c67; color: white; border: none; font-weight: bold;">RETRY</button>
 </div>
 
 <canvas id="gameCanvas"></canvas>
 
 <div class="controls">
-    <div style="display:flex; gap:12px;">
+    <div class="btn-group">
         <button id="lBtn">LEFT</button>
         <button id="rBtn">RIGHT</button>
     </div>
-    <div style="display:flex; gap:12px;">
+    <div class="btn-group">
         <button id="jBtn" style="background:#3498db; color:white;">JUMP</button>
         <button id="aBtn" style="background:#e74c3c; color:white;">ATTACK</button>
     </div>
@@ -44,23 +45,25 @@
     const ctx = canvas.getContext("2d");
     let coins = 0, hp = 100;
 
-    // പുതിയ ക്യാരക്ടർ ഇമേജ് ലോഡ് ചെയ്യുന്നു
+    // Load the new character image
     const ninjaImg = new Image();
-    ninjaImg.src = "1000066473.gif"; // നിങ്ങൾ അയച്ച ഇമേജ് ഫയൽ നെയിം
+    ninjaImg.src = "1000066473.gif"; // Use your uploaded file name
 
-    const p = { x: 100, y: 300, w: 60, h: 60, dx: 0, dy: 0, ground: false, dir: 1 };
+    const p = { x: 100, y: 300, w: 65, h: 65, dx: 0, dy: 0, ground: false, dir: 1 };
     
+    // Platform layout inspired by your adventure map
     const platforms = [
         { x: 0, y: 550, w: 500, h: 60 },    
         { x: 550, y: 450, w: 250, h: 40 },  
         { x: 300, y: 320, w: 250, h: 40 },  
-        { x: 700, y: 220, w: 350, h: 40 }   
+        { x: 750, y: 250, w: 300, h: 40 }   
     ];
 
+    // Gold coins placed on platforms
     const coinItems = [
         { x: 350, y: 280, collected: false },
-        { x: 600, y: 400, collected: false },
-        { x: 850, y: 180, collected: false }
+        { x: 650, y: 410, collected: false },
+        { x: 900, y: 210, collected: false }
     ];
 
     function resize() {
@@ -71,7 +74,7 @@
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Platforms
+        // Draw Platforms with grass tops
         ctx.fillStyle = "#795548";
         platforms.forEach(plat => {
             ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
@@ -80,17 +83,19 @@
             ctx.fillStyle = "#795548";
         });
 
-        // Coins
+        // Draw Gold Coins
         ctx.fillStyle = "#FFD700";
         coinItems.forEach(c => {
             if(!c.collected) {
                 ctx.beginPath();
                 ctx.arc(c.x, c.y, 10, 0, Math.PI*2);
                 ctx.fill();
+                ctx.strokeStyle = "#B8860B";
+                ctx.stroke();
             }
         });
 
-        // പുതിയ നിഞ്ച ക്യാരക്ടർ വരയ്ക്കുന്നു
+        // Draw the Ninja Character
         ctx.save();
         if(p.dir === -1) {
             ctx.scale(-1, 1);
@@ -105,20 +110,22 @@
     }
 
     function update() {
-        p.dy += 0.8; 
+        p.dy += 0.8; // Gravity physics
         p.x += p.dx;
         p.y += p.dy;
         p.ground = false;
 
+        // Platform collision logic
         platforms.forEach(plat => {
             if(p.x < plat.x + plat.w && p.x + p.w > plat.x &&
-               p.y + p.h > plat.y && p.y + p.h < plat.y + 20) {
+               p.y + p.h > plat.y && p.y + p.h < plat.y + 25) {
                 p.y = plat.y - p.h;
                 p.dy = 0;
                 p.ground = true;
             }
         });
 
+        // Collecting coins
         coinItems.forEach(c => {
             if(!c.collected && Math.abs(p.x + p.w/2 - c.x) < 30 && Math.abs(p.y + p.h/2 - c.y) < 30) {
                 c.collected = true;
@@ -127,20 +134,24 @@
             }
         });
 
+        // Game Over if falling off screen
         if(p.y > canvas.height) { 
             document.getElementById("overlay").style.display = "flex";
         }
     }
 
+    // Input handlers for mobile buttons
     const setBtn = (id, start, end) => {
         const b = document.getElementById(id);
         b.ontouchstart = (e) => { e.preventDefault(); start(); };
         b.ontouchend = (e) => { e.preventDefault(); end(); };
+        b.onmousedown = (e) => { e.preventDefault(); start(); };
+        b.onmouseup = (e) => { e.preventDefault(); end(); };
     };
 
-    setBtn("lBtn", () => { p.dx = -6; p.dir = -1; }, () => p.dx = 0);
-    setBtn("rBtn", () => { p.dx = 6; p.dir = 1; }, () => p.dx = 0);
-    setBtn("jBtn", () => { if(p.ground) p.dy = -16; }, () => {});
+    setBtn("lBtn", () => { p.dx = -7; p.dir = -1; }, () => p.dx = 0);
+    setBtn("rBtn", () => { p.dx = 7; p.dir = 1; }, () => p.dx = 0);
+    setBtn("jBtn", () => { if(p.ground) p.dy = -17; }, () => {});
 
     window.onload = () => { resize(); draw(); };
     window.onresize = resize;
