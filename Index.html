@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
-    <title>Ninja Adventure - Level 1</title>
+    <title>Ninja Adventure Level 1</title>
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; font-family: sans-serif; }
         canvas { display: block; background: linear-gradient(#1e3799, #4a69bd); }
@@ -13,14 +13,14 @@
         button { width: 85px; height: 85px; border-radius: 50%; border: 2px solid #fff; background: rgba(0,0,0,0.6); color: white; font-weight: bold; touch-action: manipulation; outline: none; }
         button:active { background: #ed4c67; transform: scale(0.9); }
         #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
-        .win-btn { padding: 15px 40px; border-radius: 30px; background: #27ae60; color: white; border: none; font-weight: bold; font-size: 18px; margin-top: 20px; }
+        .win-btn { padding: 15px 40px; border-radius: 30px; background: #27ae60; color: white; border: none; font-weight: bold; font-size: 18px; margin-top: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="ui">
     <div>COINS: <span id="coin-count">0</span> / 3</div>
-    <div id="status">COLLECT ALL COINS TO OPEN EXIT!</div>
+    <div id="status">COLLECT ALL COINS TO WIN!</div>
 </div>
 
 <div id="overlay">
@@ -46,27 +46,26 @@
     const ctx = canvas.getContext("2d");
     let coins = 0, onVine = false, isWin = false;
 
-    // Loading Character Image
+    // Fixed Image Loading logic
     const ninjaImg = new Image();
     ninjaImg.src = "1000066473.gif"; 
 
-    const p = { x: 60, y: 350, w: 70, h: 70, dx: 0, dy: 0, ground: false, dir: 1 };
+    const p = { x: 70, y: 350, w: 75, h: 75, dx: 0, dy: 0, ground: false, dir: 1 };
     
-    // Platform layout based on reference images
+    // Improved platforms inspired by reference image
     const platforms = [
-        { x: 0, y: 520, w: 300, h: 100 },    
-        { x: 450, y: 400, w: 200, h: 40 },   
-        { x: 800, y: 300, w: 300, h: 400 }   
+        { x: 0, y: 520, w: 320, h: 150 },    // Start platform
+        { x: 450, y: 400, w: 220, h: 40 },   // Floating platform 1
+        { x: 800, y: 320, w: 350, h: 500 }   // Goal platform
     ];
 
     const coinItems = [
-        { x: 150, y: 470, collected: false },
+        { x: 180, y: 470, collected: false },
         { x: 550, y: 350, collected: false },
-        { x: 950, y: 250, collected: false }
+        { x: 950, y: 270, collected: false }
     ];
 
-    // Vine/Rope position
-    const vine = { x: 380, y: 0, w: 12, h: 450 };
+    const vine = { x: 380, y: 0, w: 14, h: 480 };
 
     function resize() {
         canvas.width = window.innerWidth;
@@ -80,36 +79,29 @@
         // Draw Vine
         ctx.fillStyle = "#2ecc71";
         ctx.fillRect(vine.x, vine.y, vine.w, vine.h);
-        ctx.strokeStyle = "#27ae60";
-        ctx.lineWidth = 2;
-        for(let i=0; i<vine.h; i+=20) {
-            ctx.beginPath(); ctx.moveTo(vine.x, i); ctx.lineTo(vine.x+12, i+10); ctx.stroke();
-        }
 
-        // Draw Platforms with grass
+        // Draw Platforms with Grass
         platforms.forEach(plat => {
-            ctx.fillStyle = "#5d4037"; // Brown ground
+            ctx.fillStyle = "#5d4037"; // Brown dirt
             ctx.fillRect(plat.x, plat.y, plat.w, plat.h);
             ctx.fillStyle = "#4caf50"; // Green grass
-            ctx.fillRect(plat.x, plat.y, plat.w, 12);
+            ctx.fillRect(plat.x, plat.y, plat.w, 15);
         });
 
-        // Draw Gold Coins
+        // Draw Coins
         ctx.fillStyle = "#f1c40f";
         coinItems.forEach(c => {
             if(!c.collected) {
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, 12, 0, Math.PI*2);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(c.x, c.y, 14, 0, Math.PI*2); ctx.fill();
                 ctx.strokeStyle = "#fff"; ctx.stroke();
             }
         });
 
-        // Portal appears only when coins = 3
+        // Portal appears after collecting 3 coins
         if(coins === 3) {
             ctx.fillStyle = "#9b59b6";
-            ctx.fillRect(900, 200, 60, 100);
-            ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.strokeRect(900, 200, 60, 100);
+            ctx.fillRect(920, 220, 70, 100);
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.strokeRect(920, 220, 70, 100);
         }
 
         // Draw Ninja Character
@@ -128,7 +120,7 @@
 
     function update() {
         if(!onVine) {
-            p.dy += 0.8; // Gravity physics
+            p.dy += 0.9; // Gravity
             p.y += p.dy;
         }
         p.x += p.dx;
@@ -136,35 +128,32 @@
 
         platforms.forEach(plat => {
             if(p.x < plat.x + plat.w && p.x + p.w > plat.x && 
-               p.y + p.h > plat.y && p.y + p.h < plat.y + 25) {
-                p.y = plat.y - p.h;
-                p.dy = 0;
-                p.ground = true;
+               p.y + p.h > plat.y && p.y + p.h < plat.y + 30) {
+                p.y = plat.y - p.h; p.dy = 0; p.ground = true;
             }
         });
 
         coinItems.forEach(c => {
-            if(!c.collected && Math.abs(p.x + p.w/2 - c.x) < 40 && Math.abs(p.y + p.h/2 - c.y) < 40) {
-                c.collected = true;
-                coins++;
+            if(!c.collected && Math.abs(p.x + p.w/2 - c.x) < 45 && Math.abs(p.y + p.h/2 - c.y) < 45) {
+                c.collected = true; coins++;
                 document.getElementById("coin-count").innerText = coins;
                 if(coins === 3) document.getElementById("status").innerText = "EXIT PORTAL UNLOCKED!";
             }
         });
 
-        // Winning Logic: Reach portal with 3 coins
-        if(coins === 3 && p.x > 880 && p.y < 350) {
+        // Win Condition logic
+        if(coins === 3 && p.x > 900 && p.y < 350) {
             isWin = true;
             document.getElementById("overlay").style.display = "flex";
         }
 
-        // Reset if hero falls off screen
+        // Reset if falling off
         if(p.y > canvas.height) {
-            p.x = 60; p.y = 350; p.dy = 0; onVine = false;
+            p.x = 70; p.y = 350; p.dy = 0; onVine = false;
         }
     }
 
-    const setup = (id, start, end) => {
+    const setBtn = (id, start, end) => {
         const b = document.getElementById(id);
         const handleStart = (e) => { e.preventDefault(); start(); };
         const handleEnd = (e) => { e.preventDefault(); end(); };
@@ -172,17 +161,13 @@
         b.onmousedown = handleStart; b.onmouseup = handleEnd;
     };
 
-    setup("lBtn", () => { p.dx = -7; p.dir = -1; }, () => p.dx = 0);
-    setup("rBtn", () => { p.dx = 7; p.dir = 1; }, () => p.dx = 0);
-    setup("jBtn", () => { 
-        if(p.ground || onVine) { 
-            p.dy = -18; onVine = false; 
-        } 
-    }, () => {});
+    setBtn("lBtn", () => { p.dx = -8; p.dir = -1; }, () => p.dx = 0);
+    setBtn("rBtn", () => { p.dx = 8; p.dir = 1; }, () => p.dx = 0);
+    setBtn("jBtn", () => { if(p.ground || onVine) { p.dy = -19; onVine = false; } }, () => {});
     
-    // Vine Switch Logic
-    setup("sBtn", () => {
-        if(Math.abs(p.x + p.w/2 - vine.x) < 60) {
+    // Improved Vine Switch
+    setBtn("sBtn", () => {
+        if(Math.abs(p.x + p.w/2 - vine.x) < 65) {
             onVine = !onVine;
             if(onVine) { p.x = vine.x - p.w/2; p.dy = 0; }
         }
