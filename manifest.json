@@ -1,14 +1,14 @@
 {
-  "name": "Ninja Combat Pro",
+  "name": "Ninja Adventure Pro",
   "short_name": "NinjaGame",
   "start_url": "Index.html",
   "display": "standalone",
   "orientation": "landscape",
-  "background_color": "#000000",
-  "theme_color": "#ed4c67",
+  "background_color": "#87CEEB",
+  "theme_color": "#228B22",
   "icons": [
     {
-      "src": "1770788668374.png",
+      "src": "image_0.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
